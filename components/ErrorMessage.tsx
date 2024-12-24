@@ -1,4 +1,9 @@
-export default function ErrorMessage({ message, details }) {
+interface ErrorMessageProps {
+  message: string;
+  details?: string;
+}
+
+export default function ErrorMessage({ message, details }: ErrorMessageProps) {
   return (
     <div className="error-message">
       <div className="error-content">
@@ -24,33 +29,34 @@ export default function ErrorMessage({ message, details }) {
       </div>
       <style jsx>{`
         .error-message {
-          background-color: #fee2e2;
-          border: 1px solid #fecaca;
-          border-radius: 6px;
-          padding: 12px;
-          margin: 8px 0;
+          margin: 1rem 0;
+          padding: 1rem;
+          border-radius: 0.5rem;
+          background-color: #FEE2E2;
+          border: 1px solid #FCA5A5;
         }
         .error-content {
           display: flex;
           align-items: flex-start;
-          gap: 12px;
+          gap: 0.75rem;
+        }
+        svg {
+          flex-shrink: 0;
+          color: #DC2626;
+          margin-top: 0.125rem;
         }
         .message-container {
           flex: 1;
         }
         .message {
-          color: #b91c1c;
-          font-weight: 500;
           margin: 0;
+          color: #991B1B;
+          font-weight: 500;
         }
         .details {
-          color: #991b1b;
+          margin: 0.5rem 0 0;
+          color: #7F1D1D;
           font-size: 0.875rem;
-          margin: 4px 0 0 0;
-        }
-        svg {
-          color: #dc2626;
-          flex-shrink: 0;
         }
       `}</style>
     </div>

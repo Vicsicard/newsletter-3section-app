@@ -1,11 +1,7 @@
 import { parse } from 'csv-parse';
+import type { Contact } from '@/types';
 
-interface Contact {
-  name: string;
-  email: string;
-}
-
-export async function parseCSV(fileBuffer: Buffer): Promise<Contact[]> {
+export async function parseCSV(input: string | Buffer): Promise<Contact[]> {
   return new Promise((resolve, reject) => {
     const contacts: Contact[] = [];
     const parser = parse({
@@ -23,25 +19,29 @@ export async function parseCSV(fileBuffer: Buffer): Promise<Contact[]> {
         }
 
         contacts.push({
+          email: record.email,
           name: record.name || '',
-          email: record.email.toLowerCase(),
+          company_id: '', // This will be set by the API
+          created_at: new Date().toISOString(),
+          id: '', // This will be set by Supabase
         });
       }
     });
 
     parser.on('error', function(err) {
-      reject(new Error('Error parsing CSV: ' + err.message));
+      reject(err);
     });
 
     parser.on('end', function() {
-      if (contacts.length === 0) {
-        reject(new Error('No valid contacts found in CSV'));
-      } else {
-        resolve(contacts);
-      }
+      resolve(contacts);
     });
 
-    parser.write(fileBuffer);
+    // Handle the input
+    if (Buffer.isBuffer(input)) {
+      parser.write(input);
+    } else {
+      parser.write(Buffer.from(input));
+    }
     parser.end();
   });
 }
