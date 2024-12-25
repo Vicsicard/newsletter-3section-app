@@ -49,7 +49,12 @@ export interface OnboardingResponse {
     company_id: string;
     total_contacts: number;
     failed_contacts: number;
+    status: 'success' | 'partial' | 'failed';
     newsletter_id?: string;
+  };
+  error?: {
+    code: string;
+    details?: string;
   };
 }
 

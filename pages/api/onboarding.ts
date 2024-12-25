@@ -32,7 +32,7 @@ export default async function handler(
     });
     
     const [fields, files] = await new Promise<[formidable.Fields<string>, formidable.Files]>((resolve, reject) => {
-      form.parse(req, (err, fields, files) => {
+      form.parse(req, (err: Error | null, fields: formidable.Fields<string>, files: formidable.Files) => {
         if (err) reject(new ApiError(400, `File upload error: ${err.message}`));
         resolve([fields, files]);
       });
@@ -162,6 +162,7 @@ export default async function handler(
         company_id: company.id,
         total_contacts: contacts.length,
         failed_contacts: failedContacts,
+        status: failedContacts > 0 ? 'partial' : 'success',
         newsletter_id: newsletter?.id,
       },
     });
