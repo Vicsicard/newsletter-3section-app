@@ -3,7 +3,7 @@ import formidable from 'formidable';
 import { supabaseAdmin } from '@/utils/supabase';
 import { parseCSV } from '@/utils/csv';
 import fs from 'fs/promises';
-import type { OnboardingResponse } from '@/types';
+import type { OnboardingResponse } from '@/types/form';
 import { ApiError } from '@/utils/errorHandler';
 
 // Disable body parsing, we'll handle the form data manually
@@ -28,7 +28,16 @@ export default async function handler(
 
   try {
     const form = formidable({
-      maxFileSize: 1024 * 1024, // 1MB
+      maxFileSize: 5 * 1024 * 1024, // 5MB for logo
+      multiples: true,
+      filter: (part: formidable.Part) => {
+        // Allow CSV files and images
+        if (part.mimetype?.includes('csv')) return true;
+        if (part.name === 'logo_file') {
+          return ['image/jpeg', 'image/png', 'image/gif'].includes(part.mimetype || '');
+        }
+        return false;
+      },
     });
     
     const [fields, files] = await new Promise<[formidable.Fields<string>, formidable.Files]>((resolve, reject) => {
@@ -42,15 +51,19 @@ export default async function handler(
     const companyName = fields.company_name?.toString();
     const websiteUrl = fields.website_url?.toString();
     const contactEmail = fields.contact_email?.toString();
+    const phoneNumber = fields.phone_number?.toString();
+    const industry = fields.industry?.toString();
+    const targetAudience = fields.target_audience?.toString();
 
-    if (!companyName || !contactEmail) {
+    // Validate required fields
+    if (!companyName || !contactEmail || !industry || !targetAudience) {
       throw new ApiError(400, 'Missing required fields');
     }
 
-    // Validate file
-    const csvFiles = files.csv_file;
+    // Validate files
+    const csvFiles = files.contact_list;
     if (!csvFiles || !Array.isArray(csvFiles) || csvFiles.length === 0) {
-      throw new ApiError(400, 'CSV file is required');
+      throw new ApiError(400, 'Contact list CSV is required');
     }
     const csvFile = csvFiles[0];
 
@@ -63,17 +76,70 @@ export default async function handler(
       throw new ApiError(400, 'Invalid email address');
     }
 
-    // Create company record
+    if (phoneNumber && !phoneNumber.match(/^\+?[\d\s-()]{10,}$/)) {
+      throw new ApiError(400, 'Invalid phone number');
+    }
+
+    // Handle logo upload if present
+    let logoUrl = null;
+    const logoFiles = files.logo_file;
+    if (logoFiles && Array.isArray(logoFiles) && logoFiles.length > 0) {
+      try {
+        const logoFile = logoFiles[0];
+        
+        // Upload logo to Supabase Storage
+        const logoBuffer = await fs.readFile(logoFile.filepath);
+        const logoFileName = `${Date.now()}-${logoFile.originalFilename}`;
+        
+        const { data: logoData, error: logoError } = await supabaseAdmin
+          .storage
+          .from('company-logos')
+          .upload(logoFileName, logoBuffer, {
+            contentType: logoFile.mimetype || 'image/jpeg',
+            upsert: false
+          });
+
+        if (logoError) {
+          console.error('Logo upload error:', logoError);
+          // Don't throw error, just continue without logo
+        } else {
+          const { data: { publicUrl } } = supabaseAdmin
+            .storage
+            .from('company-logos')
+            .getPublicUrl(logoFileName);
+
+          logoUrl = publicUrl;
+        }
+      } catch (error) {
+        console.error('Logo upload error:', error);
+        // Don't throw error, just continue without logo
+      }
+    }
+
+    // Check if company exists
+    const { data: existingCompany } = await supabaseAdmin
+      .from('companies')
+      .select('id, version')
+      .eq('contact_email', contactEmail)
+      .order('version', { ascending: false })
+      .limit(1)
+      .single();
+
+    // Create or update company record
     const { data: company, error: companyError } = await supabaseAdmin
       .from('companies')
       .insert([
         {
-          name: companyName,
+          company_name: companyName,
           website_url: websiteUrl || null,
           contact_email: contactEmail,
+          phone_number: phoneNumber || null,
+          industry,
+          target_audience: targetAudience,
+          logo_url: logoUrl,
           status: 'active',
-          created_at: new Date().toISOString(),
-        },
+          version: existingCompany ? (existingCompany.version + 1) : 1
+        }
       ])
       .select()
       .single();
@@ -90,7 +156,7 @@ export default async function handler(
       console.log(`Parsed ${contacts.length} contacts from CSV`);
     } catch (error) {
       console.error('CSV parsing error:', error);
-      throw new ApiError(400, 'Failed to parse CSV file');
+      throw new ApiError(400, 'Failed to parse CSV file. Ensure it contains only Name and Email columns.');
     }
 
     // Insert contacts into database
@@ -99,84 +165,77 @@ export default async function handler(
 
     for (let i = 0; i < contacts.length; i += batchSize) {
       const batch = contacts.slice(i, i + batchSize).map(contact => ({
-        ...contact,
         company_id: company.id,
+        name: contact.name,
+        email: contact.email,
+        status: 'active',
         created_at: new Date().toISOString(),
       }));
 
-      console.log(`Inserting batch ${i / batchSize + 1} of contacts...`);
       const { error: contactsError } = await supabaseAdmin
         .from('contacts')
         .insert(batch);
 
       if (contactsError) {
-        console.error('Error inserting contacts batch:', contactsError);
+        console.error(`Failed to insert batch ${i / batchSize + 1}:`, contactsError);
         failedContacts += batch.length;
       }
     }
 
-    // Create CSV upload record
-    const { data: csvUpload, error: csvUploadError } = await supabaseAdmin
-      .from('csv_uploads')
-      .insert({
-        company_id: company.id,
-        filename: csvFile.originalFilename || 'unknown.csv',
-        status: failedContacts === contacts.length ? 'failed' : 'completed',
-        processed_rows: contacts.length - failedContacts,
-        failed_rows: failedContacts,
-        created_at: new Date().toISOString(),
-      })
-      .select()
-      .single();
+    // Clean up temporary files
+    await Promise.all([
+      fs.unlink(csvFile.filepath),
+      ...(logoFiles && Array.isArray(logoFiles) ? logoFiles.map(f => fs.unlink(f.filepath)) : []),
+    ]);
 
-    if (csvUploadError) {
-      console.error('Error creating CSV upload record:', csvUploadError);
-      throw new ApiError(500, 'Failed to create CSV upload record');
+    // Generate newsletter content
+    try {
+      const response = await fetch(`${process.env.BASE_URL}/api/generate-newsletter`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ companyId: company.id }),
+      });
+
+      if (!response.ok) {
+        console.error('Newsletter generation failed:', await response.text());
+        throw new Error('Failed to generate newsletter');
+      }
+    } catch (error) {
+      console.error('Error generating newsletter:', error);
+      throw new Error('Failed to generate newsletter');
     }
 
-    // Clean up uploaded file
-    await fs.unlink(csvFile.filepath).catch(console.error);
-
-    // Create initial newsletter draft
-    console.log('Creating initial newsletter draft...');
-    const { data: newsletter, error: newsletterError } = await supabaseAdmin
-      .from('newsletters')
-      .insert({
-        company_id: company.id,
-        status: 'draft',
-        created_at: new Date().toISOString(),
-      })
-      .select()
-      .single();
-
-    if (newsletterError) {
-      console.error('Error creating newsletter draft:', newsletterError);
-      // Non-critical error, continue
-    }
-
-    // Return success response
+    const successfulContacts = contacts.length - failedContacts;
     res.status(200).json({
       success: true,
-      message: 'Onboarding completed successfully',
+      message: `Successfully created company and imported ${successfulContacts} contacts${
+        failedContacts > 0 ? ` (${failedContacts} failed)` : ''
+      }. Newsletter generation started.`,
       data: {
-        company_id: company.id,
-        total_contacts: contacts.length,
-        failed_contacts: failedContacts,
-        status: failedContacts > 0 ? 'partial' : 'success',
-        newsletter_id: newsletter?.id,
+        id: company.id,
+        company_name: company.company_name,
+        logo_url: company.logo_url,
+        website_url: company.website_url,
+        contact_email: company.contact_email,
+        phone_number: company.phone_number,
+        industry: company.industry,
+        target_audience: company.target_audience,
+        contacts_count: successfulContacts,
       },
     });
   } catch (error) {
+    console.error('Onboarding error:', error);
     if (error instanceof ApiError) {
       res.status(error.statusCode).json({
         success: false,
         message: error.message,
       });
     } else {
-      console.error('Onboarding error:', error);
       res.status(500).json({
         success: false,
-        message: 'Internal server error',
+        message: 'An unexpected error occurred',
       });
     }
   }

@@ -1,6 +1,6 @@
 import { useState, FormEvent } from 'react';
 import ErrorMessage from '@/components/ErrorMessage';
-import type { FormErrors } from '@/types';
+import type { FormErrors } from '@/types/form';
 
 export default function Home() {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -14,6 +14,17 @@ export default function Home() {
     // Company name validation
     if (!formData.get('company_name')?.toString().trim()) {
       errors.company_name = 'Company name is required';
+    }
+
+    // Logo file validation
+    const logoFile = formData.get('logo_file') as File | null;
+    if (logoFile) {
+      const validTypes = ['image/jpeg', 'image/png', 'image/gif'];
+      if (!validTypes.includes(logoFile.type)) {
+        errors.logo_file = 'Please upload a JPEG, PNG, or GIF file';
+      } else if (logoFile.size > 5 * 1024 * 1024) { // 5MB
+        errors.logo_file = 'File size must be less than 5MB';
+      }
     }
 
     // Website URL validation
@@ -30,12 +41,28 @@ export default function Home() {
       errors.contact_email = 'Please enter a valid email address';
     }
 
-    // CSV file validation
-    const csvFile = formData.get('csv_file') as File | null;
-    if (!csvFile) {
-      errors.csv_file = 'Contact list CSV is required';
-    } else if (!csvFile.name.toLowerCase().endsWith('.csv')) {
-      errors.csv_file = 'Please upload a CSV file';
+    // Phone number validation
+    const phone = formData.get('phone_number')?.toString().trim();
+    if (phone && !phone.match(/^\+?[\d\s-()]{10,}$/)) {
+      errors.phone_number = 'Please enter a valid phone number';
+    }
+
+    // Industry validation
+    if (!formData.get('industry')?.toString().trim()) {
+      errors.industry = 'Please select an industry';
+    }
+
+    // Target audience description validation
+    if (!formData.get('target_audience')?.toString().trim()) {
+      errors.target_audience = 'Target audience description is required';
+    }
+
+    // Contact list validation
+    const contactList = formData.get('contact_list') as File | null;
+    if (!contactList) {
+      errors.contact_list = 'Contact list CSV is required';
+    } else if (!contactList.name.toLowerCase().endsWith('.csv')) {
+      errors.contact_list = 'Please upload a CSV file';
     }
 
     return errors;
@@ -82,162 +109,205 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md mx-auto">
-        <div className="text-center">
-          <h2 className="text-3xl font-extrabold text-gray-900">
-            Newsletter Onboarding
-          </h2>
-          <p className="mt-2 text-sm text-gray-600">
-            Enter your company details and upload your contact list to get started
-          </p>
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-3xl mx-auto bg-white rounded-2xl shadow-xl p-8">
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-extrabold text-gray-900 mb-2 bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-indigo-600">
+            Digital Rascal Marketing Onboarding Form
+          </h1>
+          <p className="text-lg text-gray-600">Let's get started with your marketing journey</p>
         </div>
 
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          {/* Company Information */}
-          <div className="rounded-md shadow-sm -space-y-px bg-white p-4">
-            <div className="mb-4">
-              <label htmlFor="company_name" className="block text-sm font-medium text-gray-700">
-                Company Name
-              </label>
-              <input
-                type="text"
-                name="company_name"
-                id="company_name"
-                className={`mt-1 block w-full rounded-md shadow-sm ${
-                  formErrors.company_name
-                    ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
-                    : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
-                }`}
-                placeholder="Enter your company name"
-              />
-              {formErrors.company_name && (
-                <p className="mt-1 text-sm text-red-600">{formErrors.company_name}</p>
-              )}
-            </div>
+        {error && <ErrorMessage message={error} />}
+        {success && (
+          <div className="mb-4 p-4 bg-green-50 rounded-lg">
+            <p className="text-green-800">{success}</p>
+          </div>
+        )}
 
-            <div className="mb-4">
-              <label htmlFor="website_url" className="block text-sm font-medium text-gray-700">
-                Website URL (Optional)
-              </label>
-              <input
-                type="url"
-                name="website_url"
-                id="website_url"
-                className={`mt-1 block w-full rounded-md shadow-sm ${
-                  formErrors.website_url
-                    ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
-                    : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
-                }`}
-                placeholder="https://example.com"
-              />
-              {formErrors.website_url && (
-                <p className="mt-1 text-sm text-red-600">{formErrors.website_url}</p>
-              )}
-            </div>
-
-            <div className="mb-4">
-              <label htmlFor="contact_email" className="block text-sm font-medium text-gray-700">
-                Contact Email
-              </label>
-              <input
-                type="email"
-                name="contact_email"
-                id="contact_email"
-                className={`mt-1 block w-full rounded-md shadow-sm ${
-                  formErrors.contact_email
-                    ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
-                    : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
-                }`}
-                placeholder="you@example.com"
-              />
-              {formErrors.contact_email && (
-                <p className="mt-1 text-sm text-red-600">{formErrors.contact_email}</p>
-              )}
-            </div>
-
-            <div>
-              <label htmlFor="csv_file" className="block text-sm font-medium text-gray-700">
-                Contact List (CSV)
-              </label>
-              <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
-                <div className="space-y-1 text-center">
-                  <svg
-                    className="mx-auto h-12 w-12 text-gray-400"
-                    stroke="currentColor"
-                    fill="none"
-                    viewBox="0 0 48 48"
-                    aria-hidden="true"
-                  >
-                    <path
-                      d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
-                      strokeWidth={2}
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                  <div className="flex text-sm text-gray-600">
-                    <label
-                      htmlFor="csv_file"
-                      className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500"
-                    >
-                      <span>Upload a file</span>
-                      <input
-                        id="csv_file"
-                        name="csv_file"
-                        type="file"
-                        accept=".csv"
-                        className="sr-only"
-                      />
-                    </label>
-                    <p className="pl-1">or drag and drop</p>
-                  </div>
-                  <p className="text-xs text-gray-500">CSV file up to 10MB</p>
-                </div>
-              </div>
-              {formErrors.csv_file && (
-                <p className="mt-1 text-sm text-red-600">{formErrors.csv_file}</p>
-              )}
-            </div>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div>
+            <label htmlFor="company_name" className="block text-sm font-medium text-gray-700">
+              Company Name *
+            </label>
+            <input
+              type="text"
+              name="company_name"
+              id="company_name"
+              placeholder="e.g., Digital Rascal Solutions"
+              className="mt-1 block w-full px-4 py-3 rounded-lg border border-gray-300 
+                       shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 
+                       hover:border-indigo-300 transition-colors duration-200"
+            />
+            {formErrors.company_name && (
+              <p className="mt-1 text-sm text-red-600">{formErrors.company_name}</p>
+            )}
           </div>
 
-          {error && <ErrorMessage message={error} />}
-          {success && (
-            <div className="rounded-md bg-green-50 p-4">
-              <div className="flex">
-                <div className="flex-shrink-0">
-                  <svg
-                    className="h-5 w-5 text-green-400"
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                    aria-hidden="true"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                </div>
-                <div className="ml-3">
-                  <p className="text-sm font-medium text-green-800">{success}</p>
-                </div>
-              </div>
-            </div>
-          )}
+          <div>
+            <label htmlFor="website_url" className="block text-sm font-medium text-gray-700">
+              Website URL
+            </label>
+            <input
+              type="url"
+              name="website_url"
+              id="website_url"
+              placeholder="e.g., https://digitalrascal.com"
+              className="mt-1 block w-full px-4 py-3 rounded-lg border border-gray-300 
+                       shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 
+                       hover:border-indigo-300 transition-colors duration-200"
+            />
+            {formErrors.website_url && (
+              <p className="mt-1 text-sm text-red-600">{formErrors.website_url}</p>
+            )}
+          </div>
 
           <div>
+            <label htmlFor="contact_email" className="block text-sm font-medium text-gray-700">
+              Contact Email *
+            </label>
+            <input
+              type="email"
+              name="contact_email"
+              id="contact_email"
+              placeholder="e.g., marketing@digitalrascal.com"
+              className="mt-1 block w-full px-4 py-3 rounded-lg border border-gray-300 
+                       shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 
+                       hover:border-indigo-300 transition-colors duration-200"
+            />
+            {formErrors.contact_email && (
+              <p className="mt-1 text-sm text-red-600">{formErrors.contact_email}</p>
+            )}
+          </div>
+
+          <div>
+            <label htmlFor="phone_number" className="block text-sm font-medium text-gray-700">
+              Phone Number
+            </label>
+            <input
+              type="tel"
+              name="phone_number"
+              id="phone_number"
+              placeholder="e.g., +1 (555) 123-4567"
+              className="mt-1 block w-full px-4 py-3 rounded-lg border border-gray-300 
+                       shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 
+                       hover:border-indigo-300 transition-colors duration-200"
+            />
+            {formErrors.phone_number && (
+              <p className="mt-1 text-sm text-red-600">{formErrors.phone_number}</p>
+            )}
+          </div>
+
+          <div>
+            <label htmlFor="industry" className="block text-sm font-medium text-gray-700">
+              Industry *
+            </label>
+            <input
+              type="text"
+              name="industry"
+              id="industry"
+              placeholder="e.g., Technology, E-commerce, Healthcare"
+              className="mt-1 block w-full px-4 py-3 rounded-lg border border-gray-300 
+                       shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 
+                       hover:border-indigo-300 transition-colors duration-200"
+            />
+            {formErrors.industry && (
+              <p className="mt-1 text-sm text-red-600">{formErrors.industry}</p>
+            )}
+          </div>
+
+          <div>
+            <label htmlFor="target_audience" className="block text-sm font-medium text-gray-700">
+              Target Audience Description
+            </label>
+            <textarea
+              name="target_audience"
+              id="target_audience"
+              rows={4}
+              placeholder="e.g., Small business owners aged 30-50 in the United States, interested in digital marketing solutions"
+              className="mt-1 block w-full px-4 py-3 rounded-lg border border-gray-300 
+                       shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 
+                       hover:border-indigo-300 transition-colors duration-200"
+            />
+            {formErrors.target_audience && (
+              <p className="mt-1 text-sm text-red-600">{formErrors.target_audience}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              Company Logo
+            </label>
+            <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 
+                          border-dashed rounded-lg hover:border-indigo-300 transition-colors duration-200">
+              <div className="space-y-1 text-center">
+                <svg
+                  className="mx-auto h-12 w-12 text-gray-400"
+                  stroke="currentColor"
+                  fill="none"
+                  viewBox="0 0 48 48"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
+                    strokeWidth={2}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+                <div className="flex text-sm text-gray-600">
+                  <label
+                    htmlFor="logo_file"
+                    className="relative cursor-pointer rounded-md font-medium text-indigo-600 hover:text-indigo-500"
+                  >
+                    <span>Upload a file</span>
+                    <input
+                      id="logo_file"
+                      name="logo_file"
+                      type="file"
+                      className="sr-only"
+                      accept="image/*"
+                    />
+                  </label>
+                  <p className="pl-1">or drag and drop</p>
+                </div>
+                <p className="text-xs text-gray-500">PNG, JPG, GIF up to 5MB</p>
+              </div>
+            </div>
+            {formErrors.logo_file && (
+              <p className="mt-1 text-sm text-red-600">{formErrors.logo_file}</p>
+            )}
+          </div>
+
+          <div>
+            <label htmlFor="contact_list" className="block text-sm font-medium text-gray-700">
+              Contact List (CSV)
+            </label>
+            <input
+              type="file"
+              name="contact_list"
+              id="contact_list"
+              accept=".csv"
+              className="mt-1 block w-full px-4 py-3 rounded-lg border border-gray-300 
+                       shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 
+                       hover:border-indigo-300 transition-colors duration-200"
+            />
+            {formErrors.contact_list && (
+              <p className="mt-1 text-sm text-red-600">{formErrors.contact_list}</p>
+            )}
+          </div>
+
+          <div className="pt-4">
             <button
               type="submit"
               disabled={isSubmitting}
-              className={`group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white ${
-                isSubmitting
-                  ? 'bg-blue-400 cursor-not-allowed'
-                  : 'bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500'
-              }`}
+              className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg
+                       text-sm font-medium text-white bg-gradient-to-r from-purple-600 to-indigo-600
+                       hover:from-purple-700 hover:to-indigo-700 focus:outline-none focus:ring-2
+                       focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200
+                       disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isSubmitting ? 'Processing...' : 'Submit'}
+              {isSubmitting ? 'Submitting...' : 'Submit Onboarding Form'}
             </button>
           </div>
         </form>

@@ -1,113 +1,66 @@
-# Newsletter Application
+# Newsletter Generation App
 
-A Next.js-based newsletter management application with AI-powered content generation and email automation.
+A Next.js application that helps businesses create personalized newsletters using AI. The app features a multi-step onboarding form, contact CSV import, and AI-powered newsletter generation.
 
 ## Features
 
-- 📝 Multi-step onboarding form
-- 📊 CSV contact list processing
-- 🤖 AI-powered content generation (OpenAI)
-- 🎨 AI image generation (Replicate)
-- 📧 Email automation (Brevo)
-- 🗄️ Database integration (Supabase)
-- ✨ Modern UI with error handling
-- 🔒 Type-safe implementation
+- Multi-step onboarding form for collecting company information
+- CSV contact import functionality
+- Logo upload with image processing
+- AI-powered industry insights generation using GPT-4
+- Automated 3-section newsletter creation
+- Supabase integration for data storage
 
-## Prerequisites
+## Tech Stack
 
-- Node.js (v18 or higher)
-- npm (v9 or higher)
-- A Supabase account
-- API keys for OpenAI, Replicate, and Brevo
+- **Frontend**: Next.js, React, Tailwind CSS
+- **Backend**: Next.js API Routes
+- **Database**: Supabase (PostgreSQL)
+- **AI Integration**: OpenAI GPT-4
+- **File Storage**: Supabase Storage
+- **Image Processing**: Sharp
 
-## Quick Start
+## Environment Variables
 
-1. **Clone and Install**
+Create a `.env.local` file with the following variables:
+
+```env
+OPENAI_API_KEY=your_openai_api_key
+SUPABASE_URL=your_supabase_url
+SUPABASE_ANON_KEY=your_supabase_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
+BASE_URL=http://localhost:3001
+```
+
+## Getting Started
+
+1. Clone the repository
+2. Install dependencies:
    ```bash
-   git clone [your-repo-url]
-   cd newsletter-3section-app
-   npm install --legacy-peer-deps
+   npm install
    ```
-
-2. **Environment Setup**
-   ```bash
-   cp .env.example .env.local
-   ```
-   Fill in the following environment variables:
-   - `SUPABASE_URL`
-   - `SUPABASE_SERVICE_ROLE_KEY`
-   - `SUPABASE_ANON_KEY`
-   - `OPENAI_API_KEY`
-   - `REPLICATE_API_KEY`
-   - `BREVO_API_KEY`
-   - `BASE_URL`
-   - `NODE_ENV`
-
-3. **Development**
+3. Set up environment variables
+4. Initialize Supabase tables:
+   - Run the SQL scripts in `/supabase/schema.sql`
+   - Run the SQL scripts in `/supabase/add_gpt_tables.sql`
+5. Start the development server:
    ```bash
    npm run dev
    ```
-   Visit `http://localhost:3000`
 
-4. **Production Build**
-   ```bash
-   npm run build
-   npm start
-   ```
+## Database Schema
 
-## Project Structure
+The application uses the following main tables:
+- `companies`: Store company information
+- `contacts`: Store imported contacts
+- `industry_insights`: Store AI-generated industry insights
+- `newsletters`: Track newsletter metadata
+- `newsletter_sections`: Store the three sections of each newsletter
 
-```
-newsletter-3section-app/
-├── components/          # React components
-├── pages/              # Next.js pages and API routes
-├── public/             # Static assets
-├── styles/             # CSS styles
-├── types/              # TypeScript type definitions
-├── utils/              # Utility functions
-└── server.ts           # Custom server configuration
-```
+## API Endpoints
 
-## API Routes
-
-- `/api/onboarding`: Handles form submission and file uploads
-- `/api/generate`: AI content generation
-- `/api/preview`: Newsletter preview generation
-- `/api/send`: Email sending endpoint
-
-## Development Guidelines
-
-1. **Code Style**
-   - Use TypeScript for all new files
-   - Follow ESLint configuration
-   - Use proper error handling
-   - Maintain type safety
-
-2. **Git Workflow**
-   - Create feature branches
-   - Write descriptive commit messages
-   - Keep PRs focused and small
-
-3. **Testing**
-   - Write unit tests for utilities
-   - Add integration tests for API routes
-   - Test error scenarios
-
-## Error Handling
-
-The application implements a comprehensive error handling system:
-- Client-side form validation
-- API error responses with proper status codes
-- Error boundary for React components
-- Proper error logging and monitoring
-
-## Security
-
-- Environment variables for sensitive data
-- Input validation and sanitization
-- File upload restrictions
-- API rate limiting
-- Proper CORS configuration
+- `/api/onboarding`: Handle company registration and contact import
+- `/api/generate-newsletter`: Generate industry insights and newsletter content
 
 ## Contributing
 
@@ -115,12 +68,4 @@ The application implements a comprehensive error handling system:
 2. Create your feature branch
 3. Commit your changes
 4. Push to the branch
-5. Create a Pull Request
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## Support
-
-For support, email [your-email] or open an issue in the repository.
+5. Create a new Pull Request

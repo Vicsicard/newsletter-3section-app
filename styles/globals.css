@@ -2,6 +2,33 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  body {
+    @apply antialiased;
+  }
+}
+
+@layer components {
+  .form-input-hover {
+    @apply transition-all duration-200 ease-in-out;
+    @apply hover:border-indigo-300;
+    @apply focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500;
+  }
+}
+
+/* Custom animations */
+@keyframes gradient {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
 /* Custom styles */
 .error-message {
   @apply fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50;
