@@ -198,17 +198,31 @@ export default async function handler(
       company: companyResponse,
     });
   } catch (error) {
-    console.error('Onboarding error:', error);
+    console.error('API Error:', error);
+    
     if (error instanceof ApiError) {
       res.status(error.statusCode).json({
         success: false,
-        message: error.message,
+        message: error.message
       });
-    } else {
-      res.status(500).json({
-        success: false,
-        message: 'An unexpected error occurred',
-      });
+      return;
     }
+
+    // Handle Supabase errors
+    if (error && typeof error === 'object' && 'code' in error) {
+      const code = (error as { code: string }).code;
+      if (code === '23505') { // Unique violation
+        res.status(409).json({
+          success: false,
+          message: 'A company with this email already exists'
+        });
+        return;
+      }
+    }
+
+    res.status(500).json({
+      success: false,
+      message: 'An unexpected error occurred. Please try again.'
+    });
   }
 }

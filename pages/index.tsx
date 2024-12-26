@@ -68,6 +68,7 @@ export default function Home() {
     e.preventDefault();
     setIsLoading(true);
     setShowModal(true);
+    setError(null);
 
     const formData = new FormData(e.currentTarget);
     setEmail(formData.get('contact_email') as string);
@@ -88,6 +89,10 @@ export default function Home() {
 
       const data = await response.json();
 
+      if (!response.ok) {
+        throw new Error(data.message || 'Server error occurred');
+      }
+
       if (data.success) {
         setIsSuccess(true);
       } else {
@@ -95,7 +100,9 @@ export default function Home() {
       }
     } catch (error) {
       console.error('Error:', error);
-      alert('Failed to submit form. Please try again.');
+      setError(error instanceof Error ? error.message : 'An unexpected error occurred');
+      setIsSuccess(false);
+      setShowModal(false);
     } finally {
       setIsLoading(false);
     }
@@ -272,7 +279,13 @@ export default function Home() {
           isOpen={showModal}
           email={email}
           isSuccess={isSuccess}
-          onClose={handleCloseModal}
+          onClose={() => {
+            setShowModal(false);
+            if (isSuccess) {
+              router.push('/');
+            }
+          }}
+          error={error}
         />
       </div>
     </div>
