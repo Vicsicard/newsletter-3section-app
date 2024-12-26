@@ -6,11 +6,9 @@ import type { OnboardingResponse, Company } from '@/types/form';
 import { ApiError, DatabaseError, ValidationError } from '@/utils/errors';
 import { NextRequest } from 'next/server';
 
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
+// New way to configure API routes in App Router
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
   // Initialize response object

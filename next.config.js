@@ -28,7 +28,6 @@ const nextConfig = {
     ];
   },
   experimental: {
-    appDir: true,
     serverComponentsExternalPackages: ['@supabase/supabase-js']
   },
   env: {
