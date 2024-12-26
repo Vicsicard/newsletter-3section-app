@@ -82,9 +82,17 @@ export default async function handler(
       },
     });
 
-    // Parse form data
-    const [fields, files] = await new Promise((resolve, reject) => {
-      form.parse(req, (err: Error | null, fields: any, files: any) => {
+    type FormFields = {
+      [key: string]: string | string[];
+    };
+
+    type FormFiles = {
+      [key: string]: formidable.File | formidable.File[];
+    };
+
+    // Parse form data with proper typing
+    const [fields, files] = await new Promise<[FormFields, FormFiles]>((resolve, reject) => {
+      form.parse(req, (err: Error | null, fields: FormFields, files: FormFiles) => {
         if (err) {
           console.error('Form parsing error:', err);
           reject(err);
