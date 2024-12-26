@@ -1,8 +1,8 @@
 import { useRouter } from 'next/router';
-import { GetStaticProps, GetStaticPaths } from 'next';
+import type { GetStaticProps, GetStaticPaths } from 'next';
 import { createClient } from '@supabase/supabase-js';
 
-interface Newsletter {
+type Newsletter = {
   id: string;
   company_id: string;
   content: string;
@@ -10,29 +10,16 @@ interface Newsletter {
   created_at: string;
 }
 
-interface Props {
-  newsletter: Newsletter | null;
-  error?: string;
-}
+// Initialize Supabase client
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+const supabase = createClient(supabaseUrl, supabaseKey);
 
-// Create a Supabase client for static generation
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-if (!supabaseUrl || !supabaseServiceKey) {
-  throw new Error('Missing Supabase environment variables');
-}
-
-const supabase = createClient(supabaseUrl, supabaseServiceKey, {
-  auth: {
-    autoRefreshToken: false,
-    persistSession: false
-  }
-});
-
-export default function NewsletterView({ newsletter, error }: Props) {
+export default function NewsletterView({ newsletter }: { newsletter: Newsletter | null }) {
   const router = useRouter();
 
+  // If the page is not yet generated, this will be displayed
+  // initially until getStaticProps() finishes running
   if (router.isFallback) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -41,25 +28,36 @@ export default function NewsletterView({ newsletter, error }: Props) {
     );
   }
 
-  if (error) return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="text-xl text-red-600">Error: {error}</div>
-    </div>
-  );
-
-  if (!newsletter) return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="text-xl text-gray-600">Newsletter not found</div>
-    </div>
-  );
+  if (!newsletter) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="max-w-md w-full p-6 bg-white rounded-lg shadow-lg">
+          <h2 className="text-2xl font-bold text-gray-800 mb-4">
+            Newsletter Not Found
+          </h2>
+          <p className="text-gray-600 mb-4">
+            The newsletter you're looking for might have been removed or is temporarily unavailable.
+          </p>
+          <button
+            onClick={() => router.push('/')}
+            className="w-full bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 transition-colors"
+          >
+            Return Home
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-4xl mx-auto py-8 px-4">
         <div className="bg-white shadow-lg rounded-lg overflow-hidden">
           <div className="p-8">
-            <div className="prose prose-lg max-w-none" 
-                 dangerouslySetInnerHTML={{ __html: newsletter.content }} />
+            <div 
+              className="prose prose-lg max-w-none"
+              dangerouslySetInnerHTML={{ __html: newsletter.content }}
+            />
           </div>
         </div>
       </div>
@@ -69,18 +67,18 @@ export default function NewsletterView({ newsletter, error }: Props) {
 
 export const getStaticPaths: GetStaticPaths = async () => {
   return {
-    paths: [], // Don't pre-render any paths
-    fallback: 'blocking' // Block until the page is generated
+    paths: [],
+    fallback: true,
   };
 };
 
 export const getStaticProps: GetStaticProps = async ({ params }) => {
   try {
-    if (!params?.id) {
-      return { notFound: true };
+    if (!params?.id || typeof params.id !== 'string') {
+      throw new Error('Invalid newsletter ID');
     }
 
-    const { data, error } = await supabase
+    const { data: newsletter, error } = await supabase
       .from('newsletters')
       .select('*')
       .eq('id', params.id)
@@ -88,38 +86,34 @@ export const getStaticProps: GetStaticProps = async ({ params }) => {
 
     if (error) {
       console.error('Supabase error:', error);
-      return {
-        props: {
-          newsletter: null,
-          error: 'Failed to fetch newsletter'
-        }
-      };
+      throw error;
     }
 
-    if (!data) {
+    if (!newsletter) {
       return { notFound: true };
     }
 
-    // Ensure all date fields are converted to strings
-    const newsletter = {
-      ...data,
-      created_at: new Date(data.created_at).toISOString()
+    // Ensure dates are serialized as strings
+    const serializedNewsletter = {
+      ...newsletter,
+      created_at: newsletter.created_at.toString(),
     };
 
     return {
       props: {
-        newsletter,
-        error: null
+        newsletter: serializedNewsletter,
       },
-      revalidate: 60
+      revalidate: 60,
     };
   } catch (error) {
     console.error('Error in getStaticProps:', error);
-    return {
-      props: {
-        newsletter: null,
-        error: 'An unexpected error occurred'
-      }
-    };
+    
+    // For build-time errors, we want to fail the build
+    if (process.env.NODE_ENV === 'production') {
+      throw error;
+    }
+
+    // For development, we want to show a nice error page
+    return { notFound: true };
   }
 };
