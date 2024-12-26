@@ -1,7 +1,6 @@
 import { useRouter } from 'next/router';
-import { useState } from 'react';
-import { supabaseServer } from '@/utils/supabase-server';
 import { GetStaticProps, GetStaticPaths } from 'next';
+import { createClient } from '@supabase/supabase-js';
 
 interface Newsletter {
   id: string;
@@ -16,13 +15,24 @@ interface Props {
   error?: string;
 }
 
-export default function NewsletterView({ newsletter: initialNewsletter, error: initialError }: Props) {
-  const router = useRouter();
-  const [newsletter] = useState<Newsletter | null>(initialNewsletter);
-  const [error] = useState<string | null>(initialError || null);
+// Create a Supabase client for static generation
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-  // If the page is not yet generated, this will be displayed
-  // initially until getStaticProps() finishes running
+if (!supabaseUrl || !supabaseServiceKey) {
+  throw new Error('Missing Supabase environment variables');
+}
+
+const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+  auth: {
+    autoRefreshToken: false,
+    persistSession: false
+  }
+});
+
+export default function NewsletterView({ newsletter, error }: Props) {
+  const router = useRouter();
+
   if (router.isFallback) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -58,48 +68,58 @@ export default function NewsletterView({ newsletter: initialNewsletter, error: i
 }
 
 export const getStaticPaths: GetStaticPaths = async () => {
-  // Return an empty array for paths - Next.js will generate pages on-demand
   return {
-    paths: [],
-    fallback: true // Enable on-demand page generation
+    paths: [], // Don't pre-render any paths
+    fallback: 'blocking' // Block until the page is generated
   };
 };
 
 export const getStaticProps: GetStaticProps = async ({ params }) => {
-  if (!params?.id) {
-    return {
-      notFound: true
-    };
-  }
-
   try {
-    const { data, error } = await supabaseServer
+    if (!params?.id) {
+      return { notFound: true };
+    }
+
+    const { data, error } = await supabase
       .from('newsletters')
       .select('*')
       .eq('id', params.id)
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase error:', error);
+      return {
+        props: {
+          newsletter: null,
+          error: 'Failed to fetch newsletter'
+        }
+      };
+    }
 
-    // Ensure the data is serializable
+    if (!data) {
+      return { notFound: true };
+    }
+
+    // Ensure all date fields are converted to strings
     const newsletter = {
       ...data,
-      created_at: data.created_at.toString()
+      created_at: new Date(data.created_at).toISOString()
     };
 
     return {
       props: {
         newsletter,
+        error: null
       },
-      revalidate: 60 // Revalidate every 60 seconds
+      revalidate: 60
     };
-  } catch (error: any) {
-    console.error('Error fetching newsletter:', error);
+  } catch (error) {
+    console.error('Error in getStaticProps:', error);
     return {
       props: {
         newsletter: null,
-        error: error.message
+        error: 'An unexpected error occurred'
       }
     };
   }
-}
+};
