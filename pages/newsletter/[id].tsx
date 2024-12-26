@@ -1,5 +1,5 @@
 import { useRouter } from 'next/router';
-import type { GetStaticProps, GetStaticPaths } from 'next';
+import type { InferGetStaticPropsType, GetStaticProps, GetStaticPaths } from 'next';
 import { createClient } from '@supabase/supabase-js';
 
 type Newsletter = {
@@ -10,16 +10,11 @@ type Newsletter = {
   created_at: string;
 }
 
-// Initialize Supabase client
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-const supabase = createClient(supabaseUrl, supabaseKey);
-
-export default function NewsletterView({ newsletter }: { newsletter: Newsletter | null }) {
+export default function NewsletterView({
+  newsletter,
+}: InferGetStaticPropsType<typeof getStaticProps>) {
   const router = useRouter();
 
-  // If the page is not yet generated, this will be displayed
-  // initially until getStaticProps() finishes running
   if (router.isFallback) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -67,17 +62,27 @@ export default function NewsletterView({ newsletter }: { newsletter: Newsletter 
 
 export const getStaticPaths: GetStaticPaths = async () => {
   return {
-    paths: [],
-    fallback: true,
+    paths: [], // Don't pre-render any paths
+    fallback: true, // Enable on-demand generation
   };
 };
 
-export const getStaticProps: GetStaticProps = async ({ params }) => {
+export const getStaticProps = (async ({ params }) => {
   try {
-    if (!params?.id || typeof params.id !== 'string') {
-      throw new Error('Invalid newsletter ID');
+    if (!params?.id) {
+      return { notFound: true };
     }
 
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!supabaseUrl || !supabaseKey) {
+      console.error('Missing environment variables');
+      return { notFound: true };
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseKey);
+    
     const { data: newsletter, error } = await supabase
       .from('newsletters')
       .select('*')
@@ -86,34 +91,26 @@ export const getStaticProps: GetStaticProps = async ({ params }) => {
 
     if (error) {
       console.error('Supabase error:', error);
-      throw error;
+      return { notFound: true };
     }
 
     if (!newsletter) {
       return { notFound: true };
     }
 
-    // Ensure dates are serialized as strings
-    const serializedNewsletter = {
-      ...newsletter,
-      created_at: newsletter.created_at.toString(),
-    };
-
     return {
       props: {
-        newsletter: serializedNewsletter,
+        newsletter: {
+          ...newsletter,
+          created_at: new Date(newsletter.created_at).toISOString(),
+        },
       },
-      revalidate: 60,
+      revalidate: 60, // Revalidate every 60 seconds
     };
   } catch (error) {
     console.error('Error in getStaticProps:', error);
-    
-    // For build-time errors, we want to fail the build
-    if (process.env.NODE_ENV === 'production') {
-      throw error;
-    }
-
-    // For development, we want to show a nice error page
     return { notFound: true };
   }
-};
+}) satisfies GetStaticProps<{
+  newsletter: Newsletter | null;
+}>;
