@@ -83,8 +83,8 @@ export default function Home() {
       return;
     }
 
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
-    const url = `${baseUrl}/api/onboarding`;
+    // Instead of using baseUrl, we'll use relative URL
+    const url = '/api/onboarding';
     console.log('Submitting to:', url);
 
     return new Promise((resolve, reject) => {
