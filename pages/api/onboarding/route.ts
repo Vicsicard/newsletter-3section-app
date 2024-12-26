@@ -105,14 +105,17 @@ export default async function handler(
     });
 
     // Extract company data
-    const companyData: Partial<Company> = {
-      name: Array.isArray(fields.company_name) ? fields.company_name[0] : fields.company_name,
+    const companyData = {
+      company_name: Array.isArray(fields.company_name) ? fields.company_name[0] : fields.company_name,
       website_url: Array.isArray(fields.website_url) ? fields.website_url[0] : fields.website_url,
       contact_email: Array.isArray(fields.contact_email) ? fields.contact_email[0] : fields.contact_email,
       phone_number: Array.isArray(fields.phone_number) ? fields.phone_number[0] : fields.phone_number,
       industry: Array.isArray(fields.industry) ? fields.industry[0] : fields.industry,
       target_audience: Array.isArray(fields.target_audience) ? fields.target_audience[0] : fields.target_audience,
-      company_description: Array.isArray(fields.company_description) ? fields.company_description[0] : fields.company_description,
+      audience_description: Array.isArray(fields.audience_description) ? fields.audience_description[0] : fields.audience_description,
+      newsletter_objectives: Array.isArray(fields.newsletter_objectives) ? fields.newsletter_objectives[0] : fields.newsletter_objectives,
+      primary_cta: Array.isArray(fields.primary_cta) ? fields.primary_cta[0] : fields.primary_cta,
+      contacts_count: 0, // Will be updated after processing contacts
       created_at: new Date().toISOString(),
     };
 
@@ -143,10 +146,10 @@ export default async function handler(
     // Generate newsletter content
     console.log('Generating newsletter content...');
     const newsletterContent = await generateNewsletterContent({
-      companyName: companyData.name,
+      companyName: companyData.company_name,
       industry: companyData.industry,
       targetAudience: companyData.target_audience,
-      companyDescription: companyData.company_description || '',
+      companyDescription: companyData.audience_description || '',
     });
 
     // Insert newsletter data
@@ -156,7 +159,7 @@ export default async function handler(
       .insert([{
         company_id: company.id,
         content: newsletterContent.content,
-        title: newsletterContent.title || `${companyData.name} Newsletter`,
+        title: newsletterContent.title || `${companyData.company_name} Newsletter`,
         created_at: new Date().toISOString(),
       }]);
 
