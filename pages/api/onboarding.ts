@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import formidable from 'formidable';
+import formidable, { Part } from 'formidable';
 import { supabaseAdmin } from '@/utils/supabase';
 import { parseCSV } from '@/utils/csv';
 import { generateNewsletterContent } from '@/utils/newsletter';
@@ -76,7 +76,7 @@ export default async function handler(
       maxFileSize: 5 * 1024 * 1024, // 5MB max file size
       multiples: true,
       allowEmptyFiles: true,
-      filter: (part) => {
+      filter: (part: Part) => {
         // Only process CSV files if they exist
         return part.name === 'contact_list' ? part.originalFilename?.toLowerCase().endsWith('.csv') || false : true;
       },
