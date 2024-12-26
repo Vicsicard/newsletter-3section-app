@@ -105,14 +105,14 @@ export default async function handler(
     });
 
     // Extract company data
-    const companyData: Company = {
-      name: fields.company_name,
-      website_url: fields.website_url,
-      contact_email: fields.contact_email,
-      phone_number: fields.phone_number,
-      industry: fields.industry,
-      target_audience: fields.target_audience,
-      company_description: fields.company_description,
+    const companyData: Partial<Company> = {
+      name: Array.isArray(fields.company_name) ? fields.company_name[0] : fields.company_name,
+      website_url: Array.isArray(fields.website_url) ? fields.website_url[0] : fields.website_url,
+      contact_email: Array.isArray(fields.contact_email) ? fields.contact_email[0] : fields.contact_email,
+      phone_number: Array.isArray(fields.phone_number) ? fields.phone_number[0] : fields.phone_number,
+      industry: Array.isArray(fields.industry) ? fields.industry[0] : fields.industry,
+      target_audience: Array.isArray(fields.target_audience) ? fields.target_audience[0] : fields.target_audience,
+      company_description: Array.isArray(fields.company_description) ? fields.company_description[0] : fields.company_description,
       created_at: new Date().toISOString(),
     };
 
