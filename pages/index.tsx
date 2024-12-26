@@ -83,8 +83,8 @@ export default function Home() {
       return;
     }
 
-    // Instead of using baseUrl, we'll use relative URL
-    const url = '/api/onboarding';
+    // Use the new route path
+    const url = '/api/onboarding/route';
     console.log('Submitting to:', url);
 
     return new Promise((resolve, reject) => {
