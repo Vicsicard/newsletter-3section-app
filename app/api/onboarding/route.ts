@@ -1,12 +1,16 @@
 import { NextResponse } from 'next/server';
-import formidable from 'formidable';
 import { supabaseAdmin } from '@/utils/supabase';
 import { parseCSV } from '@/utils/csv';
 import { generateNewsletterContent } from '@/utils/newsletter';
-import fs from 'fs/promises';
 import type { OnboardingResponse, Company } from '@/types/form';
 import { ApiError, DatabaseError, ValidationError } from '@/utils/errors';
 import { NextRequest } from 'next/server';
+
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+};
 
 export async function POST(req: NextRequest) {
   // Initialize response object
@@ -130,7 +134,7 @@ export async function POST(req: NextRequest) {
         success: false,
         message: apiError.message
       },
-      { status: apiError.statusCode }
+      { status: apiError.statusCode || 500 }
     );
   }
 }

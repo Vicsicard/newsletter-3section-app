@@ -27,14 +27,25 @@ const nextConfig = {
       },
     ];
   },
+  experimental: {
+    appDir: true,
+    serverComponentsExternalPackages: ['@supabase/supabase-js']
+  },
   env: {
     NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
     NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
+    OPENAI_API_KEY: process.env.OPENAI_API_KEY,
+    SUPABASE_URL: process.env.SUPABASE_URL,
+    SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY,
+    REPLICATE_API_KEY: process.env.REPLICATE_API_KEY,
+    BREVO_API_KEY: process.env.BREVO_API_KEY,
+    BASE_URL: process.env.BASE_URL,
+    BREVO_SENDER_EMAIL: process.env.BREVO_SENDER_EMAIL,
   },
-  experimental: {
-    serverComponentsExternalPackages: ['@supabase/supabase-js']
-  }
+  images: {
+    domains: ['oaidalleapiprodscus.blob.core.windows.net', 'replicate.delivery'],
+  },
 };
 
 module.exports = nextConfig;
