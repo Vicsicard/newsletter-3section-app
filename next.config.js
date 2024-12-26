@@ -2,8 +2,6 @@
 const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
-  cacheHandler: require.resolve('./cache-handler.js'),
-  cacheMaxMemorySize: 0, // Disable default in-memory caching
   generateBuildId: async () => {
     // You can replace this with a git hash or any other unique identifier
     return `build-${Date.now()}`;
@@ -25,12 +23,6 @@ const nextConfig = {
     NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
     NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
-  },
-  // Ensure we handle errors during static generation
-  onError: (err) => {
-    console.error('Next.js build error:', err);
-    // Don't fail the build in production
-    return err.code === 'ENOENT' ? null : err;
   },
   experimental: {
     // This will help with environment variables during build
