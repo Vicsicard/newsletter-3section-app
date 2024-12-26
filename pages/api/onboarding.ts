@@ -2,6 +2,7 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import formidable from 'formidable';
 import { supabaseAdmin } from '@/utils/supabase';
 import { parseCSV } from '@/utils/csv';
+import { generateNewsletterContent } from '@/utils/newsletter';
 import fs from 'fs/promises';
 import type { OnboardingResponse, Company } from '@/types/form';
 import { ApiError } from '@/utils/errorHandler';
@@ -10,41 +11,94 @@ import { ApiError } from '@/utils/errorHandler';
 export const config = {
   api: {
     bodyParser: false,
-    externalResolver: true,
   },
 };
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse<OnboardingResponse>
+  res: NextApiResponse
 ) {
+  // Set CORS headers
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  
+  // Handle preflight request
+  if (req.method === 'OPTIONS') {
+    res.status(200).end();
+    return;
+  }
+
   if (req.method !== 'POST') {
     return res.status(405).json({
       success: false,
-      message: 'Method not allowed',
+      message: 'Method not allowed'
     });
   }
 
+  // Initialize response object
+  let responseData = {
+    success: false,
+    message: '',
+    company: null as any
+  };
+
   try {
-    // Parse form data
+    // Test Supabase connection first
+    console.log('Testing Supabase connection...');
+    const isConnected = await testSupabaseConnection();
+    if (!isConnected) {
+      throw new Error('Failed to connect to Supabase');
+    }
+
+    // Check if companies table exists
+    console.log('Checking companies table...');
+    const { data: tableInfo, error: tableError } = await supabaseAdmin
+      .from('companies')
+      .select('*')
+      .limit(0);
+
+    if (tableError) {
+      console.error('Table check error:', {
+        error: tableError,
+        message: tableError.message,
+        details: tableError.details,
+        hint: tableError.hint
+      });
+      throw new Error(`Failed to access companies table: ${tableError.message}`);
+    }
+
+    console.log('Companies table accessible');
+
+    console.log('Starting form parsing...');
     const form = formidable({
-      maxFileSize: 5 * 1024 * 1024,
+      maxFileSize: 5 * 1024 * 1024, // 5MB max file size
       multiples: true,
-      filter: (part: formidable.Part) => {
-        return part.mimetype?.includes('csv') || false;
+      allowEmptyFiles: true,
+      filter: (part) => {
+        // Only process CSV files if they exist
+        return part.name === 'contact_list' ? part.originalFilename?.toLowerCase().endsWith('.csv') || false : true;
       },
     });
-    
-    // Parse form data with Promise
+
+    // Parse form data
     const [fields, files] = await new Promise<[formidable.Fields<string>, formidable.Files]>((resolve, reject) => {
       form.parse(req, (err: Error | null, fields: formidable.Fields<string>, files: formidable.Files) => {
         if (err) {
-          reject(new ApiError(400, `File upload error: ${err.message}`));
+          console.error('Form parsing error:', err);
+          reject(err);
         } else {
+          console.log('Form fields:', fields);
+          console.log('Form files:', Object.keys(files).length ? files : 'No files uploaded');
           resolve([fields, files]);
         }
       });
     });
+
+    // Set headers
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Cache-Control', 'no-store');
 
     // Validate required fields
     const companyName = fields.company_name?.toString();
@@ -54,31 +108,46 @@ export default async function handler(
     const industry = fields.industry?.toString();
     const targetAudience = fields.target_audience?.toString();
 
-    if (!companyName || !contactEmail || !industry || !targetAudience) {
-      return res.status(400).json({
-        success: false,
-        message: 'Missing required fields',
-      });
+    console.log('Received fields:', {
+      companyName,
+      websiteUrl,
+      contactEmail,
+      phoneNumber,
+      industry,
+      targetAudience,
+      files: Object.keys(files)
+    });
+
+    // For testing, only require company name and email
+    if (!companyName || !contactEmail) {
+      responseData.message = 'Company name and contact email are required';
+      return res.status(400).json(responseData);
     }
 
-    // Validate files
+    // Process CSV file
+    console.log('Processing CSV file...');
     const csvFiles = files.contact_list;
-    if (!csvFiles || !Array.isArray(csvFiles) || csvFiles.length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'Contact list CSV is required',
-      });
+    let contacts: any[] = [];
+
+    if (csvFiles && Array.isArray(csvFiles) && csvFiles.length > 0) {
+      const csvFile = csvFiles[0];
+      if (csvFile.originalFilename?.toLowerCase().endsWith('.csv')) {
+        try {
+          console.log('Reading CSV file:', csvFile.originalFilename);
+          const csvContent = await fs.readFile(csvFile.filepath, 'utf-8');
+          contacts = await parseCSV(csvContent);
+          console.log(`Parsed ${contacts.length} contacts from CSV`);
+        } catch (error) {
+          console.error('Error parsing CSV:', error);
+          throw new Error('Failed to parse CSV file');
+        }
+      }
+    } else {
+      console.log('No CSV file uploaded, skipping contact import');
     }
 
-    const csvFile = csvFiles[0];
-    if (!csvFile.originalFilename?.toLowerCase().endsWith('.csv')) {
-      return res.status(400).json({
-        success: false,
-        message: 'Please upload a CSV file',
-      });
-    }
-
-    // Process company creation
+    // Create company in Supabase
+    console.log('Creating company in Supabase...');
     const { data: existingCompany } = await supabaseAdmin
       .from('companies')
       .select('id, version')
@@ -104,26 +173,24 @@ export default async function handler(
       .select()
       .single();
 
-    if (companyError || !company) {
-      return res.status(500).json({
-        success: false,
-        message: `Failed to create company: ${companyError?.message || 'Unknown error'}`,
+    if (companyError) {
+      console.error('Supabase Error:', {
+        message: companyError.message,
+        details: companyError.details,
+        hint: companyError.hint,
+        code: companyError.code
       });
+      throw new Error(`Failed to create company: ${companyError.message}`);
     }
 
-    // Process CSV file
-    const fileContent = await fs.readFile(csvFile.filepath, 'utf-8');
-    let contacts: any[] = [];
-    try {
-      contacts = await parseCSV(fileContent);
-    } catch (error) {
-      return res.status(400).json({
-        success: false,
-        message: 'Failed to parse CSV file. Ensure it contains only Name and Email columns.',
-      });
+    if (!company) {
+      throw new Error('Company created but not returned from Supabase');
     }
+
+    console.log('Company created:', company);
 
     // Insert contacts
+    console.log('Importing contacts to Supabase...');
     const batchSize = 100;
     let failedContacts = 0;
     for (let i = 0; i < contacts.length; i += batchSize) {
@@ -140,89 +207,100 @@ export default async function handler(
         .insert(batch);
 
       if (contactsError) {
+        console.error('Contact import error:', contactsError);
         failedContacts += batch.length;
       }
     }
 
+    console.log(`Successfully imported ${contacts.length - failedContacts} contacts`);
+
     // Clean up file
-    await fs.unlink(csvFile.filepath);
-
-    // Generate newsletter
-    try {
-      const newsletterResponse = await fetch(`${process.env.BASE_URL || ''}/api/generate-newsletter`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ companyId: company.id }),
-      });
-
-      const newsletterData = await newsletterResponse.json();
-
-      if (!newsletterResponse.ok) {
-        console.error('Newsletter generation failed:', newsletterData);
-        return res.status(200).json({
-          success: true,
-          message: `Company created and contacts imported. Newsletter generation failed: ${newsletterData.message || 'Unknown error'}`,
-          company: {
-            id: company.id,
-            company_name: company.company_name,
-            website_url: company.website_url,
-            contact_email: company.contact_email,
-            phone_number: company.phone_number,
-            industry: company.industry,
-            target_audience: company.target_audience,
-            audience_description: company.audience_description || '',
-            newsletter_objectives: company.newsletter_objectives || '',
-            primary_cta: company.primary_cta || '',
-            contacts_count: contacts.length - failedContacts,
-          },
-        });
-      }
-
-      return res.status(200).json({
-        success: true,
-        message: `Successfully created company and imported ${contacts.length - failedContacts} contacts${
-          failedContacts > 0 ? ` (${failedContacts} failed)` : ''
-        }. Newsletter generation started.`,
-        company: {
-          id: company.id,
-          company_name: company.company_name,
-          website_url: company.website_url,
-          contact_email: company.contact_email,
-          phone_number: company.phone_number,
-          industry: company.industry,
-          target_audience: company.target_audience,
-          audience_description: company.audience_description || '',
-          newsletter_objectives: company.newsletter_objectives || '',
-          primary_cta: company.primary_cta || '',
-          contacts_count: contacts.length - failedContacts,
-        },
-      });
-    } catch (error) {
-      // If newsletter generation fails, still return success for company creation
-      console.error('Newsletter generation error:', error);
-      return res.status(200).json({
-        success: true,
-        message: `Company created and contacts imported. Newsletter generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        company: {
-          id: company.id,
-          company_name: company.company_name,
-          website_url: company.website_url,
-          contact_email: company.contact_email,
-          phone_number: company.phone_number,
-          industry: company.industry,
-          target_audience: company.target_audience,
-          audience_description: company.audience_description || '',
-          newsletter_objectives: company.newsletter_objectives || '',
-          primary_cta: company.primary_cta || '',
-          contacts_count: contacts.length - failedContacts,
-        },
-      });
+    if (csvFiles && Array.isArray(csvFiles) && csvFiles.length > 0) {
+      const csvFile = csvFiles[0];
+      await fs.unlink(csvFile.filepath);
     }
+
+    // Generate and store newsletter
+    if (process.env.OPENAI_API_KEY) {
+      try {
+        console.log('Generating newsletter content...');
+        
+        // Generate content first
+        const content = await generateNewsletterContent({
+          companyName: company.company_name,
+          industry: company.industry || '',
+          targetAudience: company.target_audience || ''
+        });
+
+        console.log('Content generated, creating newsletter record...');
+
+        // Create newsletter with generated content
+        const { data: newsletter, error: newsletterError } = await supabaseAdmin
+          .from('newsletters')
+          .insert([
+            {
+              company_id: company.id,
+              title: `${company.company_name} Newsletter`,
+              status: 'draft',
+              content: content.content, // Using 'content' instead of 'newsletter_content'
+              created_at: new Date().toISOString()
+            }
+          ])
+          .select()
+          .single();
+
+        if (newsletterError) {
+          console.error('Newsletter creation error:', {
+            error: newsletterError,
+            message: newsletterError.message,
+            details: newsletterError.details,
+            hint: newsletterError.hint,
+            code: newsletterError.code
+          });
+          throw new Error(`Failed to create newsletter: ${newsletterError.message}`);
+        }
+
+        if (!newsletter) {
+          throw new Error('Newsletter created but not returned from Supabase');
+        }
+
+        console.log('Newsletter created successfully:', newsletter);
+        
+        responseData.success = true;
+        responseData.message = 'Company created, contacts imported, and newsletter generated successfully';
+        responseData.company = company;
+        return res.status(200).json(responseData);
+      } catch (error) {
+        console.error('Newsletter generation error:', error);
+        responseData.success = true; // Still true because company and contacts were successful
+        responseData.message = `Company created and contacts imported. Newsletter generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`;
+        responseData.company = company;
+        return res.status(200).json(responseData);
+      }
+    } else {
+      console.log('Skipping newsletter generation - OpenAI API key not set');
+      responseData.success = true;
+      responseData.message = 'Company created and contacts imported. Skipped newsletter generation (OpenAI API key not set)';
+      responseData.company = company;
+      return res.status(200).json(responseData);
+    }
+
   } catch (error) {
-    console.error('API Error:', error);
-    return res.status(error instanceof ApiError ? error.statusCode : 500).json({
-      success: false,
-      message: error instanceof Error ? error.message : 'An unexpected error occurred',
-    });
+    console.error('API error:', error);
+    responseData.message = error instanceof Error ? error.message : 'An unexpected error occurred';
+    return res.status(500).json(responseData);
+  }
+}
+
+async function testSupabaseConnection() {
+  try {
+    const { error } = await supabaseAdmin.from('companies').select('id').limit(1);
+    if (error) {
+      throw error;
+    }
+    return true;
+  } catch (error) {
+    console.error('Supabase connection test failed:', error);
+    return false;
   }
 }

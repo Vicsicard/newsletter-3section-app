@@ -71,56 +71,71 @@ export default function Home() {
     setError(null);
     setFormErrors({});
 
-    const formData = new FormData(e.currentTarget);
+    const form = e.currentTarget;
+    const formData = new FormData(form);
     setEmail(formData.get('contact_email') as string);
 
-    try {
-      const errors = validateForm(formData);
-      if (Object.keys(errors).length > 0) {
-        setFormErrors(errors);
-        setIsLoading(false);
-        setShowModal(false);
-        return;
-      }
-
-      const response = await fetch('/api/onboarding', {
-        method: 'POST',
-        body: formData,
-      });
-
-      // Clone the response stream for error handling
-      const responseClone = response.clone();
-
-      try {
-        const data = await response.json();
-        if (!response.ok) {
-          throw new Error(data?.message || 'Server error occurred');
-        }
-        
-        if (data.success) {
-          setIsSuccess(true);
-          setSuccess(data.message || 'Successfully processed your request');
-          if (data.company?.id) {
-            // Handle successful company creation
-            console.log('Company created:', data.company);
-          }
-        } else {
-          throw new Error(data.message || 'Failed to process request');
-        }
-      } catch (parseError) {
-        // If JSON parsing fails, try to get the error text from the cloned response
-        const errorText = await responseClone.text();
-        console.error('Response parsing error:', parseError);
-        console.error('Raw response:', errorText);
-        throw new Error('Server returned invalid response');
-      }
-    } catch (error) {
-      console.error('Form submission error:', error);
-      setError(error instanceof Error ? error.message : 'An unexpected error occurred');
-    } finally {
+    const errors = validateForm(formData);
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
       setIsLoading(false);
       setShowModal(false);
+      return;
     }
+
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+    const url = `${baseUrl}/api/onboarding`;
+    console.log('Submitting to:', url);
+
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', url, true);
+      
+      xhr.onload = function() {
+        console.log('Response received:', {
+          status: xhr.status,
+          statusText: xhr.statusText,
+          response: xhr.responseText
+        });
+
+        try {
+          const response = JSON.parse(xhr.responseText);
+          if (xhr.status === 200 && response.success) {
+            setIsSuccess(true);
+            setSuccess(response.message || 'Successfully processed your request');
+            if (response.company?.id) {
+              console.log('Company created:', response.company);
+            }
+            resolve(response);
+          } else {
+            const error = new Error(response.message || `Server error: ${xhr.status}`);
+            console.error('Server error:', error);
+            setError(error.message);
+            setIsSuccess(false);
+            reject(error);
+          }
+        } catch (error) {
+          console.error('Response parsing error:', error);
+          setError('Failed to process server response');
+          setIsSuccess(false);
+          reject(error);
+        }
+        setIsLoading(false);
+        setShowModal(false);
+      };
+
+      xhr.onerror = function(e) {
+        console.error('XHR error:', e);
+        setError('Network error occurred');
+        setIsSuccess(false);
+        setIsLoading(false);
+        setShowModal(false);
+        reject(new Error('Network error'));
+      };
+
+      // Send the form data
+      xhr.send(formData);
+    });
   };
 
   const handleCloseModal = () => {
@@ -149,7 +164,54 @@ export default function Home() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form 
+          id="onboardingForm"
+          className="space-y-6" 
+          encType="multipart/form-data"
+          onSubmit={(e) => {
+            e.preventDefault();
+            const formData = new FormData(e.currentTarget);
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', '/api/onboarding', true);
+            
+            xhr.onload = function() {
+              console.log('Response received:', {
+                status: xhr.status,
+                statusText: xhr.statusText,
+                response: xhr.responseText
+              });
+              
+              if (xhr.status === 200) {
+                try {
+                  const response = JSON.parse(xhr.responseText);
+                  if (response.success) {
+                    setIsSuccess(true);
+                    setSuccess(response.message || 'Success!');
+                  } else {
+                    setError(response.message || 'Request failed');
+                  }
+                } catch (err) {
+                  setError('Failed to parse response');
+                }
+              } else {
+                setError(`Server error: ${xhr.status}`);
+              }
+              
+              setIsLoading(false);
+              setShowModal(false);
+            };
+            
+            xhr.onerror = function() {
+              setError('Network error occurred');
+              setIsLoading(false);
+              setShowModal(false);
+            };
+            
+            setIsLoading(true);
+            setShowModal(true);
+            xhr.send(formData);
+          }}
+        >
           <div>
             <label htmlFor="company_name" className="block text-sm font-medium text-gray-700">
               Company Name *
@@ -276,17 +338,12 @@ export default function Home() {
             )}
           </div>
 
-          <div className="pt-4">
+          <div className="mt-6">
             <button
               type="submit"
-              disabled={isLoading}
-              className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg
-                       text-sm font-medium text-white bg-gradient-to-r from-purple-600 to-indigo-600
-                       hover:from-purple-700 hover:to-indigo-700 focus:outline-none focus:ring-2
-                       focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200
-                       disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
             >
-              {isLoading ? 'Submitting...' : 'Submit Onboarding Form'}
+              Submit
             </button>
           </div>
         </form>

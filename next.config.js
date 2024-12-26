@@ -3,18 +3,22 @@ const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
   generateBuildId: async () => {
-    // You can replace this with a git hash or any other unique identifier
     return `build-${Date.now()}`;
+  },
+  api: {
+    bodyParser: false,
+    externalResolver: true,
   },
   headers: async () => {
     return [
       {
-        source: '/:path*{/}?',
+        source: '/api/:path*',
         headers: [
-          {
-            key: 'X-Accel-Buffering',
-            value: 'no',
-          },
+          { key: 'Access-Control-Allow-Credentials', value: 'true' },
+          { key: 'Access-Control-Allow-Origin', value: '*' },
+          { key: 'Access-Control-Allow-Methods', value: 'GET,DELETE,PATCH,POST,PUT' },
+          { key: 'Access-Control-Allow-Headers', value: 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version' },
+          { key: 'X-Accel-Buffering', value: 'no' },
         ],
       },
     ];
@@ -25,19 +29,15 @@ const nextConfig = {
     SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
   },
   experimental: {
-    // This will help with environment variables during build
     serverComponentsExternalPackages: ['@supabase/supabase-js']
   },
-  // Configure API routes
   serverRuntimeConfig: {
-    // Will only be available on the server side
     bodyParser: {
-      sizeLimit: '1mb',
+      sizeLimit: '10mb',
     },
   },
   publicRuntimeConfig: {
-    // Will be available on both server and client
-    apiTimeout: 30000,
+    apiTimeout: 60000,
   },
 };
 
