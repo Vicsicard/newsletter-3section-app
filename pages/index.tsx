@@ -83,59 +83,31 @@ export default function Home() {
       return;
     }
 
-    // Use the new route path
-    const url = '/api/onboarding';
-    console.log('Submitting to:', url);
+    try {
+      const response = await fetch('/api/onboarding', {
+        method: 'POST',
+        body: formData,
+      });
 
-    return new Promise((resolve, reject) => {
-      const xhr = new XMLHttpRequest();
-      xhr.open('POST', url, true);
+      const data = await response.json();
       
-      xhr.onload = function() {
-        console.log('Response received:', {
-          status: xhr.status,
-          statusText: xhr.statusText,
-          response: xhr.responseText
-        });
-
-        try {
-          const response = JSON.parse(xhr.responseText);
-          if (xhr.status === 200 && response.success) {
-            setIsSuccess(true);
-            setSuccess(response.message || 'Successfully processed your request');
-            if (response.company?.id) {
-              console.log('Company created:', response.company);
-            }
-            resolve(response);
-          } else {
-            const error = new Error(response.message || `Server error: ${xhr.status}`);
-            console.error('Server error:', error);
-            setError(error.message);
-            setIsSuccess(false);
-            reject(error);
-          }
-        } catch (error) {
-          console.error('Response parsing error:', error);
-          setError('Failed to process server response');
-          setIsSuccess(false);
-          reject(error);
+      if (response.ok && data.success) {
+        setIsSuccess(true);
+        setSuccess(data.message || 'Successfully processed your request');
+        if (data.company?.id) {
+          console.log('Company created:', data.company);
         }
-        setIsLoading(false);
-        setShowModal(false);
-      };
-
-      xhr.onerror = function(e) {
-        console.error('XHR error:', e);
-        setError('Network error occurred');
-        setIsSuccess(false);
-        setIsLoading(false);
-        setShowModal(false);
-        reject(new Error('Network error'));
-      };
-
-      // Send the form data
-      xhr.send(formData);
-    });
+      } else {
+        throw new Error(data.message || `Server error: ${response.status}`);
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      setError(error instanceof Error ? error.message : 'Failed to process request');
+      setIsSuccess(false);
+    } finally {
+      setIsLoading(false);
+      setShowModal(false);
+    }
   };
 
   const handleCloseModal = () => {

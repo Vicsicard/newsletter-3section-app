@@ -1,4 +1,4 @@
-import { NextApiRequest, NextApiResponse } from 'next';
+import { NextResponse } from 'next/server';
 import formidable from 'formidable';
 import { supabaseAdmin } from '@/utils/supabase';
 import { parseCSV } from '@/utils/csv';
@@ -6,37 +6,9 @@ import { generateNewsletterContent } from '@/utils/newsletter';
 import fs from 'fs/promises';
 import type { OnboardingResponse, Company } from '@/types/form';
 import { ApiError, DatabaseError, ValidationError } from '@/utils/errors';
+import { NextRequest } from 'next/server';
 
-// Disable body parsing, we'll handle the form data manually
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
-
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
-  // Set CORS headers
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  
-  // Handle preflight request
-  if (req.method === 'OPTIONS') {
-    res.status(200).end();
-    return;
-  }
-
-  if (req.method !== 'POST') {
-    return res.status(405).json({
-      success: false,
-      message: 'Method not allowed'
-    });
-  }
-
+export async function POST(req: NextRequest) {
   // Initialize response object
   let responseData = {
     success: false,
@@ -71,51 +43,21 @@ export default async function handler(
 
     console.log('Companies table accessible');
 
-    console.log('Starting form parsing...');
-    const form = formidable({
-      maxFileSize: 5 * 1024 * 1024, // 5MB max file size
-      multiples: true,
-      allowEmptyFiles: true,
-      filter: function(part: any): boolean {
-        // Only process CSV files if they exist
-        return part.name === 'contact_list' ? part.originalFilename?.toLowerCase().endsWith('.csv') || false : true;
-      },
-    });
-
-    type FormFields = {
-      [key: string]: string | string[];
-    };
-
-    type FormFiles = {
-      [key: string]: formidable.File | formidable.File[];
-    };
-
-    // Parse form data with proper typing
-    const [fields, files] = await new Promise<[FormFields, FormFiles]>((resolve, reject) => {
-      form.parse(req, (err: Error | null, fields: FormFields, files: FormFiles) => {
-        if (err) {
-          console.error('Form parsing error:', err);
-          reject(err);
-        } else {
-          console.log('Form fields:', fields);
-          console.log('Form files:', Object.keys(files).length ? files : 'No files uploaded');
-          resolve([fields, files]);
-        }
-      });
-    });
-
-    // Extract company data
+    // Get form data
+    const formData = await req.formData();
+    
+    // Extract company data from FormData
     const companyData = {
-      company_name: Array.isArray(fields.company_name) ? fields.company_name[0] : fields.company_name,
-      website_url: Array.isArray(fields.website_url) ? fields.website_url[0] : fields.website_url,
-      contact_email: Array.isArray(fields.contact_email) ? fields.contact_email[0] : fields.contact_email,
-      phone_number: Array.isArray(fields.phone_number) ? fields.phone_number[0] : fields.phone_number,
-      industry: Array.isArray(fields.industry) ? fields.industry[0] : fields.industry,
-      target_audience: Array.isArray(fields.target_audience) ? fields.target_audience[0] : fields.target_audience,
-      audience_description: Array.isArray(fields.audience_description) ? fields.audience_description[0] : fields.audience_description,
-      newsletter_objectives: Array.isArray(fields.newsletter_objectives) ? fields.newsletter_objectives[0] : fields.newsletter_objectives,
-      primary_cta: Array.isArray(fields.primary_cta) ? fields.primary_cta[0] : fields.primary_cta,
-      contacts_count: 0, // Will be updated after processing contacts
+      company_name: formData.get('company_name') as string,
+      website_url: formData.get('website_url') as string,
+      contact_email: formData.get('contact_email') as string,
+      phone_number: formData.get('phone_number') as string,
+      industry: formData.get('industry') as string,
+      target_audience: formData.get('target_audience') as string,
+      audience_description: formData.get('audience_description') as string,
+      newsletter_objectives: formData.get('newsletter_objectives') as string,
+      primary_cta: formData.get('primary_cta') as string,
+      contacts_count: 0,
       created_at: new Date().toISOString(),
     };
 
@@ -135,10 +77,10 @@ export default async function handler(
     console.log('Company data inserted successfully');
 
     // Process contact list if provided
+    const contactListFile = formData.get('contact_list') as File;
     let contacts = [];
-    if (files.contact_list) {
-      const file = Array.isArray(files.contact_list) ? files.contact_list[0] : files.contact_list;
-      const fileContent = await fs.readFile(file.filepath, 'utf-8');
+    if (contactListFile) {
+      const fileContent = await contactListFile.text();
       contacts = await parseCSV(fileContent);
       console.log(`Parsed ${contacts.length} contacts from CSV`);
     }
@@ -179,14 +121,17 @@ export default async function handler(
       company: company
     };
 
-    res.status(200).json(responseData);
+    return NextResponse.json(responseData);
   } catch (error) {
     console.error('Error in onboarding process:', error);
     const apiError = error instanceof ApiError ? error : new DatabaseError('Internal server error');
-    res.status(apiError.statusCode).json({
-      success: false,
-      message: apiError.message
-    });
+    return NextResponse.json(
+      {
+        success: false,
+        message: apiError.message
+      },
+      { status: apiError.statusCode }
+    );
   }
 }
 
