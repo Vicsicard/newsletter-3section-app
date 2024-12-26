@@ -1,6 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import formidable from 'formidable';
-import type { Fields, Files, Part } from 'formidable';
 import { supabaseAdmin } from '@/utils/supabase';
 import { parseCSV } from '@/utils/csv';
 import { generateNewsletterContent } from '@/utils/newsletter';
@@ -77,15 +76,15 @@ export default async function handler(
       maxFileSize: 5 * 1024 * 1024, // 5MB max file size
       multiples: true,
       allowEmptyFiles: true,
-      filter: function(part: Part): boolean {
+      filter: function(part: any): boolean {
         // Only process CSV files if they exist
         return part.name === 'contact_list' ? part.originalFilename?.toLowerCase().endsWith('.csv') || false : true;
       },
     });
 
     // Parse form data
-    const [fields, files] = await new Promise<[Fields, Files]>((resolve, reject) => {
-      form.parse(req, (err: Error | null, fields: Fields, files: Files) => {
+    const [fields, files] = await new Promise((resolve, reject) => {
+      form.parse(req, (err: Error | null, fields: any, files: any) => {
         if (err) {
           console.error('Form parsing error:', err);
           reject(err);
