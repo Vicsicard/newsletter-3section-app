@@ -16,7 +16,7 @@ export default async function handler(
   res: NextApiResponse
 ) {
   if (req.method !== 'POST') {
-    return res.status(405).json({ success: false, error: 'Method not allowed' });
+    return res.status(405).json({ success: false, message: 'Method not allowed', error: 'Method not allowed' });
   }
 
   try {
@@ -24,7 +24,7 @@ export default async function handler(
     console.log('Generating newsletter for company:', companyId);
 
     if (!companyId) {
-      return res.status(400).json({ success: false, error: 'Company ID is required' });
+      return res.status(400).json({ success: false, message: 'Company ID is required', error: 'Company ID is required' });
     }
 
     // Get company information
@@ -36,11 +36,11 @@ export default async function handler(
 
     if (companyError) {
       console.error('Error fetching company:', companyError);
-      return res.status(500).json({ success: false, error: `Failed to fetch company: ${companyError.message}` });
+      return res.status(500).json({ success: false, message: `Failed to fetch company: ${companyError.message}`, error: `Failed to fetch company: ${companyError.message}` });
     }
 
     if (!company) {
-      return res.status(404).json({ success: false, error: 'Company not found' });
+      return res.status(404).json({ success: false, message: 'Company not found', error: 'Company not found' });
     }
 
     console.log('Generating industry insights for:', company.industry);
@@ -142,9 +142,11 @@ export default async function handler(
     });
   } catch (error) {
     console.error('Error in newsletter generation:', error);
+    const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
     return res.status(500).json({
       success: false,
-      error: error instanceof Error ? error.message : 'An unexpected error occurred'
+      message: errorMessage,
+      error: errorMessage
     });
   }
 }

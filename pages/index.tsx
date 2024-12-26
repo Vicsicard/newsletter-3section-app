@@ -69,6 +69,7 @@ export default function Home() {
     setIsLoading(true);
     setShowModal(true);
     setError(null);
+    setFormErrors({});
 
     const formData = new FormData(e.currentTarget);
     setEmail(formData.get('contact_email') as string);
@@ -87,32 +88,38 @@ export default function Home() {
         body: formData,
       });
 
-      let data;
+      // Clone the response stream for error handling
+      const responseClone = response.clone();
+
       try {
-        data = await response.json();
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data?.message || 'Server error occurred');
+        }
+        
+        if (data.success) {
+          setIsSuccess(true);
+          setSuccess(data.message || 'Successfully processed your request');
+          if (data.company?.id) {
+            // Handle successful company creation
+            console.log('Company created:', data.company);
+          }
+        } else {
+          throw new Error(data.message || 'Failed to process request');
+        }
       } catch (parseError) {
-        console.error('Failed to parse response:', parseError);
-        const errorText = await response.text();
+        // If JSON parsing fails, try to get the error text from the cloned response
+        const errorText = await responseClone.text();
+        console.error('Response parsing error:', parseError);
         console.error('Raw response:', errorText);
-        throw new Error('Server returned invalid response. Please try again.');
-      }
-
-      if (!response.ok) {
-        throw new Error(data?.message || 'Server error occurred');
-      }
-
-      if (data.success) {
-        setIsSuccess(true);
-      } else {
-        throw new Error(data.message || 'Something went wrong');
+        throw new Error('Server returned invalid response');
       }
     } catch (error) {
-      console.error('Error:', error);
+      console.error('Form submission error:', error);
       setError(error instanceof Error ? error.message : 'An unexpected error occurred');
-      setIsSuccess(false);
-      setShowModal(false);
     } finally {
       setIsLoading(false);
+      setShowModal(false);
     }
   };
 
