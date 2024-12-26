@@ -9,18 +9,28 @@ const openai = new OpenAI({
 });
 
 export async function generateIndustryInsights(industry: string, companyName: string) {
-  const prompt = `You are a domain expert in ${industry}. 
+  try {
+    const prompt = `You are a domain expert in ${industry}. 
 Please provide a concise summary of up to 3 current trends, statistics, or insights 
 that are relevant to a company named ${companyName}.
 Return the answer in bullet form.`;
 
-  const completion = await openai.chat.completions.create({
-    messages: [{ role: "user", content: prompt }],
-    model: "gpt-4",
-    temperature: 0.7,
-  });
+    const completion = await openai.chat.completions.create({
+      messages: [{ role: "user", content: prompt }],
+      model: "gpt-3.5-turbo",
+      temperature: 0.7,
+      max_tokens: 500
+    });
 
-  return completion.choices[0].message.content;
+    if (!completion.choices[0]?.message?.content) {
+      throw new Error('No content generated');
+    }
+
+    return completion.choices[0].message.content;
+  } catch (error) {
+    console.error('Error generating industry insights:', error);
+    throw new Error('Failed to generate industry insights');
+  }
 }
 
 export async function generateNewsletterSections(
@@ -29,7 +39,8 @@ export async function generateNewsletterSections(
   industryInsights: string,
   targetAudience: string
 ) {
-  const prompt = `You are a newsletter generator. Using the following data:
+  try {
+    const prompt = `You are a newsletter generator. Using the following data:
 
 1. Company Information:
    - Company Name: ${companyName}
@@ -65,16 +76,25 @@ Generate a 3-section newsletter.
   ]
 }`;
 
-  const completion = await openai.chat.completions.create({
-    messages: [{ role: "user", content: prompt }],
-    model: "gpt-4",
-    temperature: 0.7,
-  });
+    const completion = await openai.chat.completions.create({
+      messages: [{ role: "user", content: prompt }],
+      model: "gpt-3.5-turbo",
+      temperature: 0.7,
+      max_tokens: 1000
+    });
 
-  try {
-    return JSON.parse(completion.choices[0].message.content || '{}');
+    if (!completion.choices[0]?.message?.content) {
+      throw new Error('No content generated');
+    }
+
+    try {
+      return JSON.parse(completion.choices[0].message.content);
+    } catch (error) {
+      console.error('Failed to parse GPT response:', error);
+      throw new Error('Invalid JSON response from GPT');
+    }
   } catch (error) {
-    console.error('Failed to parse GPT response:', error);
+    console.error('Error generating newsletter sections:', error);
     throw new Error('Failed to generate newsletter sections');
   }
 }

@@ -1,66 +1,111 @@
-# Newsletter Generation App
+# Newsletter Generator App
 
-A Next.js application that helps businesses create personalized newsletters using AI. The app features a multi-step onboarding form, contact CSV import, and AI-powered newsletter generation.
+A modern web application that automates the creation and delivery of personalized newsletters using AI. Built with Next.js, TypeScript, and Tailwind CSS.
 
 ## Features
 
-- Multi-step onboarding form for collecting company information
-- CSV contact import functionality
-- Logo upload with image processing
-- AI-powered industry insights generation using GPT-4
-- Automated 3-section newsletter creation
-- Supabase integration for data storage
+### 1. Smart Onboarding
+- Multi-step form for company information
+- CSV contact list upload
+- Real-time form validation
+- Interactive loading states with engaging messages
+- Success animations with confetti
+
+### 2. AI-Powered Newsletter Generation
+- Industry-specific insights using OpenAI
+- Three-section newsletter format
+- Personalized content based on company profile
+- Automated HTML email template generation
+
+### 3. Email Integration
+- Direct newsletter delivery via Brevo API
+- Professional email templates
+- Delivery status tracking
+- HTML email support
+
+### 4. Modern UI/UX
+- Responsive design
+- Loading animations
+- Progress indicators
+- Success/error feedback
+- Engaging user interactions
 
 ## Tech Stack
 
-- **Frontend**: Next.js, React, Tailwind CSS
+- **Frontend**: Next.js, TypeScript, Tailwind CSS, React
 - **Backend**: Next.js API Routes
-- **Database**: Supabase (PostgreSQL)
-- **AI Integration**: OpenAI GPT-4
-- **File Storage**: Supabase Storage
-- **Image Processing**: Sharp
-
-## Environment Variables
-
-Create a `.env.local` file with the following variables:
-
-```env
-OPENAI_API_KEY=your_openai_api_key
-SUPABASE_URL=your_supabase_url
-SUPABASE_ANON_KEY=your_supabase_anon_key
-SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
-BASE_URL=http://localhost:3001
-```
+- **Database**: Supabase
+- **AI**: OpenAI GPT-4
+- **Email**: Brevo (formerly Sendinblue)
+- **Animations**: React Confetti, React Spinners
 
 ## Getting Started
 
-1. Clone the repository
-2. Install dependencies:
+1. **Clone the repository**
+   ```bash
+   git clone [repository-url]
+   cd newsletter-3section-app
+   ```
+
+2. **Install dependencies**
    ```bash
    npm install
    ```
-3. Set up environment variables
-4. Initialize Supabase tables:
-   - Run the SQL scripts in `/supabase/schema.sql`
-   - Run the SQL scripts in `/supabase/add_gpt_tables.sql`
-5. Start the development server:
+
+3. **Set up environment variables**
+   Create a `.env.local` file with the following variables:
+   ```
+   SUPABASE_URL=your_supabase_url
+   SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+   SUPABASE_ANON_KEY=your_anon_key
+   OPENAI_API_KEY=your_openai_key
+   BREVO_API_KEY=your_brevo_key
+   BASE_URL=http://localhost:3000
+   ```
+
+4. **Run the development server**
    ```bash
    npm run dev
    ```
 
+5. **Build for production**
+   ```bash
+   npm run build
+   npm start
+   ```
+
+## Last Updated
+- Date: 2024-12-25
+- Time: 20:04:12 PDT
+- Status: Project is actively being developed and updated. All components are functional and under testing.
+
 ## Database Schema
 
-The application uses the following main tables:
-- `companies`: Store company information
-- `contacts`: Store imported contacts
-- `industry_insights`: Store AI-generated industry insights
-- `newsletters`: Track newsletter metadata
-- `newsletter_sections`: Store the three sections of each newsletter
+### Tables
+1. **companies**
+   - Company information
+   - Contact details
+   - Industry data
 
-## API Endpoints
+2. **contacts**
+   - Contact list from CSV
+   - Relationship to company
 
-- `/api/onboarding`: Handle company registration and contact import
-- `/api/generate-newsletter`: Generate industry insights and newsletter content
+3. **newsletters**
+   - Newsletter metadata
+   - Generation status
+   - Company relationship
+
+4. **newsletter_sections**
+   - Section content
+   - HTML storage
+   - Section ordering
+
+## API Routes
+
+- **/api/onboarding**: Handle company registration and CSV upload
+- **/api/generate-newsletter**: Generate and send newsletters
+- **/api/latest-newsletter**: Retrieve most recent newsletter
 
 ## Contributing
 
@@ -68,4 +113,8 @@ The application uses the following main tables:
 2. Create your feature branch
 3. Commit your changes
 4. Push to the branch
-5. Create a new Pull Request
+5. Create a Pull Request
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.

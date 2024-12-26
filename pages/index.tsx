@@ -1,12 +1,19 @@
 import { useState, FormEvent } from 'react';
 import ErrorMessage from '@/components/ErrorMessage';
 import type { FormErrors } from '@/types/form';
+import { useRouter } from 'next/router';
+import LoadingModal from '@/components/LoadingModal';
 
 export default function Home() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState('');
   const [formErrors, setFormErrors] = useState<FormErrors>({});
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [email, setEmail] = useState('');
 
   const validateForm = (formData: FormData): FormErrors => {
     const errors: FormErrors = {};
@@ -14,17 +21,6 @@ export default function Home() {
     // Company name validation
     if (!formData.get('company_name')?.toString().trim()) {
       errors.company_name = 'Company name is required';
-    }
-
-    // Logo file validation
-    const logoFile = formData.get('logo_file') as File | null;
-    if (logoFile) {
-      const validTypes = ['image/jpeg', 'image/png', 'image/gif'];
-      if (!validTypes.includes(logoFile.type)) {
-        errors.logo_file = 'Please upload a JPEG, PNG, or GIF file';
-      } else if (logoFile.size > 5 * 1024 * 1024) { // 5MB
-        errors.logo_file = 'File size must be less than 5MB';
-      }
     }
 
     // Website URL validation
@@ -70,24 +66,21 @@ export default function Home() {
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setIsSubmitting(true);
-    setError(null);
-    setSuccess('');
-    setFormErrors({});
+    setIsLoading(true);
+    setShowModal(true);
+
+    const formData = new FormData(e.currentTarget);
+    setEmail(formData.get('contact_email') as string);
 
     try {
-      const form = e.currentTarget;
-      const formData = new FormData(form);
-      
-      // Validate form
       const errors = validateForm(formData);
       if (Object.keys(errors).length > 0) {
         setFormErrors(errors);
-        setIsSubmitting(false);
+        setIsLoading(false);
+        setShowModal(false);
         return;
       }
 
-      // Submit form
       const response = await fetch('/api/onboarding', {
         method: 'POST',
         body: formData,
@@ -95,16 +88,25 @@ export default function Home() {
 
       const data = await response.json();
 
-      if (!response.ok) {
+      if (data.success) {
+        setIsSuccess(true);
+      } else {
         throw new Error(data.message || 'Something went wrong');
       }
-
-      setSuccess('Onboarding completed successfully!');
-      form.reset();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An unexpected error occurred');
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Failed to submit form. Please try again.');
     } finally {
-      setIsSubmitting(false);
+      setIsLoading(false);
+    }
+  };
+
+  const handleCloseModal = () => {
+    setShowModal(false);
+    setIsSuccess(false);
+    if (isSuccess) {
+      // Reset form or redirect
+      router.push('/');
     }
   };
 
@@ -235,51 +237,6 @@ export default function Home() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Company Logo
-            </label>
-            <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 
-                          border-dashed rounded-lg hover:border-indigo-300 transition-colors duration-200">
-              <div className="space-y-1 text-center">
-                <svg
-                  className="mx-auto h-12 w-12 text-gray-400"
-                  stroke="currentColor"
-                  fill="none"
-                  viewBox="0 0 48 48"
-                  aria-hidden="true"
-                >
-                  <path
-                    d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
-                    strokeWidth={2}
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-                <div className="flex text-sm text-gray-600">
-                  <label
-                    htmlFor="logo_file"
-                    className="relative cursor-pointer rounded-md font-medium text-indigo-600 hover:text-indigo-500"
-                  >
-                    <span>Upload a file</span>
-                    <input
-                      id="logo_file"
-                      name="logo_file"
-                      type="file"
-                      className="sr-only"
-                      accept="image/*"
-                    />
-                  </label>
-                  <p className="pl-1">or drag and drop</p>
-                </div>
-                <p className="text-xs text-gray-500">PNG, JPG, GIF up to 5MB</p>
-              </div>
-            </div>
-            {formErrors.logo_file && (
-              <p className="mt-1 text-sm text-red-600">{formErrors.logo_file}</p>
-            )}
-          </div>
-
-          <div>
             <label htmlFor="contact_list" className="block text-sm font-medium text-gray-700">
               Contact List (CSV)
             </label>
@@ -300,17 +257,23 @@ export default function Home() {
           <div className="pt-4">
             <button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isLoading}
               className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg
                        text-sm font-medium text-white bg-gradient-to-r from-purple-600 to-indigo-600
                        hover:from-purple-700 hover:to-indigo-700 focus:outline-none focus:ring-2
                        focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200
                        disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isSubmitting ? 'Submitting...' : 'Submit Onboarding Form'}
+              {isLoading ? 'Submitting...' : 'Submit Onboarding Form'}
             </button>
           </div>
         </form>
+        <LoadingModal 
+          isOpen={showModal}
+          email={email}
+          isSuccess={isSuccess}
+          onClose={handleCloseModal}
+        />
       </div>
     </div>
   );

@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@sendgrid/mail": "^8.1.0",
+    "@sendinblue/client": "^3.3.1",
     "@supabase/supabase-js": "^2.39.1",
     "@tailwindcss/forms": "^0.5.7",
     "@types/formidable": "^3.4.5",
@@ -24,7 +25,9 @@
     "openai": "^4.77.0",
     "postcss": "^8.4.32",
     "react": "^18.2.0",
+    "react-confetti": "^6.1.0",
     "react-dom": "^18.2.0",
+    "react-spinners": "^0.15.0",
     "replicate": "^0.25.1",
     "tailwindcss": "^3.4.0"
   },

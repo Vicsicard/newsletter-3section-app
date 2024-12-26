@@ -3,7 +3,7 @@ import formidable from 'formidable';
 import { supabaseAdmin } from '@/utils/supabase';
 import { parseCSV } from '@/utils/csv';
 import fs from 'fs/promises';
-import type { OnboardingResponse } from '@/types/form';
+import type { OnboardingResponse, Company } from '@/types/form';
 import { ApiError } from '@/utils/errorHandler';
 
 // Disable body parsing, we'll handle the form data manually
@@ -28,14 +28,11 @@ export default async function handler(
 
   try {
     const form = formidable({
-      maxFileSize: 5 * 1024 * 1024, // 5MB for logo
+      maxFileSize: 5 * 1024 * 1024,
       multiples: true,
       filter: (part: formidable.Part) => {
-        // Allow CSV files and images
+        // Allow only CSV files
         if (part.mimetype?.includes('csv')) return true;
-        if (part.name === 'logo_file') {
-          return ['image/jpeg', 'image/png', 'image/gif'].includes(part.mimetype || '');
-        }
         return false;
       },
     });
@@ -80,42 +77,6 @@ export default async function handler(
       throw new ApiError(400, 'Invalid phone number');
     }
 
-    // Handle logo upload if present
-    let logoUrl = null;
-    const logoFiles = files.logo_file;
-    if (logoFiles && Array.isArray(logoFiles) && logoFiles.length > 0) {
-      try {
-        const logoFile = logoFiles[0];
-        
-        // Upload logo to Supabase Storage
-        const logoBuffer = await fs.readFile(logoFile.filepath);
-        const logoFileName = `${Date.now()}-${logoFile.originalFilename}`;
-        
-        const { data: logoData, error: logoError } = await supabaseAdmin
-          .storage
-          .from('company-logos')
-          .upload(logoFileName, logoBuffer, {
-            contentType: logoFile.mimetype || 'image/jpeg',
-            upsert: false
-          });
-
-        if (logoError) {
-          console.error('Logo upload error:', logoError);
-          // Don't throw error, just continue without logo
-        } else {
-          const { data: { publicUrl } } = supabaseAdmin
-            .storage
-            .from('company-logos')
-            .getPublicUrl(logoFileName);
-
-          logoUrl = publicUrl;
-        }
-      } catch (error) {
-        console.error('Logo upload error:', error);
-        // Don't throw error, just continue without logo
-      }
-    }
-
     // Check if company exists
     const { data: existingCompany } = await supabaseAdmin
       .from('companies')
@@ -136,7 +97,6 @@ export default async function handler(
           phone_number: phoneNumber || null,
           industry,
           target_audience: targetAudience,
-          logo_url: logoUrl,
           status: 'active',
           version: existingCompany ? (existingCompany.version + 1) : 1
         }
@@ -183,14 +143,13 @@ export default async function handler(
     }
 
     // Clean up temporary files
-    await Promise.all([
-      fs.unlink(csvFile.filepath),
-      ...(logoFiles && Array.isArray(logoFiles) ? logoFiles.map(f => fs.unlink(f.filepath)) : []),
-    ]);
+    await fs.unlink(csvFile.filepath);
 
     // Generate newsletter content
     try {
-      const response = await fetch(`${process.env.BASE_URL}/api/generate-newsletter`, {
+      console.log('Generating newsletter for company:', company.id);
+      
+      const response = await fetch('http://localhost:3001/api/generate-newsletter', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -198,32 +157,45 @@ export default async function handler(
         body: JSON.stringify({ companyId: company.id }),
       });
 
+      const responseText = await response.text();
+      console.log('Newsletter generation response:', responseText);
+
       if (!response.ok) {
-        console.error('Newsletter generation failed:', await response.text());
-        throw new Error('Failed to generate newsletter');
+        throw new Error(`Failed to generate newsletter: ${responseText}`);
       }
-    } catch (error) {
+
+      try {
+        const responseData = JSON.parse(responseText);
+        console.log('Newsletter generation successful:', responseData);
+      } catch (parseError) {
+        console.error('Failed to parse newsletter response:', parseError);
+      }
+    } catch (error: any) {
       console.error('Error generating newsletter:', error);
-      throw new Error('Failed to generate newsletter');
+      throw new Error(`Failed to generate newsletter: ${error instanceof Error ? error.message : String(error)}`);
     }
 
     const successfulContacts = contacts.length - failedContacts;
+    const companyResponse: Company = {
+      id: company.id,
+      company_name: company.company_name,
+      website_url: company.website_url,
+      contact_email: company.contact_email,
+      phone_number: company.phone_number,
+      industry: company.industry,
+      target_audience: company.target_audience,
+      audience_description: '',
+      newsletter_objectives: '',
+      primary_cta: '',
+      contacts_count: successfulContacts,
+    };
+
     res.status(200).json({
       success: true,
       message: `Successfully created company and imported ${successfulContacts} contacts${
         failedContacts > 0 ? ` (${failedContacts} failed)` : ''
       }. Newsletter generation started.`,
-      data: {
-        id: company.id,
-        company_name: company.company_name,
-        logo_url: company.logo_url,
-        website_url: company.website_url,
-        contact_email: company.contact_email,
-        phone_number: company.phone_number,
-        industry: company.industry,
-        target_audience: company.target_audience,
-        contacts_count: successfulContacts,
-      },
+      company: companyResponse,
     });
   } catch (error) {
     console.error('Onboarding error:', error);
