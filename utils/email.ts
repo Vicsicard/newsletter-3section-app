@@ -1,7 +1,7 @@
 import { TransactionalEmailsApi, SendSmtpEmail } from '@getbrevo/brevo';
 
 const apiInstance = new TransactionalEmailsApi();
-apiInstance.setApiKey(TransactionalEmailsApi.ApiKeysEnum.apiKey, process.env.BREVO_API_KEY || '');
+apiInstance.authentications['apiKey'].apiKey = process.env.BREVO_API_KEY || '';
 
 export async function sendEmail(to: string, subject: string, htmlContent: string) {
   const sendSmtpEmail = new SendSmtpEmail();
