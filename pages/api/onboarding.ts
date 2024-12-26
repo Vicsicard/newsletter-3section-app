@@ -149,7 +149,7 @@ export default async function handler(
     try {
       console.log('Generating newsletter for company:', company.id);
       
-      const response = await fetch('http://localhost:3001/api/generate-newsletter', {
+      const response = await fetch(`${process.env.BASE_URL || ''}/api/generate-newsletter`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -157,19 +157,14 @@ export default async function handler(
         body: JSON.stringify({ companyId: company.id }),
       });
 
-      const responseText = await response.text();
-      console.log('Newsletter generation response:', responseText);
-
       if (!response.ok) {
-        throw new Error(`Failed to generate newsletter: ${responseText}`);
+        const errorText = await response.text();
+        console.error('Newsletter generation failed:', errorText);
+        throw new Error(`Failed to generate newsletter: ${errorText}`);
       }
 
-      try {
-        const responseData = JSON.parse(responseText);
-        console.log('Newsletter generation successful:', responseData);
-      } catch (parseError) {
-        console.error('Failed to parse newsletter response:', parseError);
-      }
+      const responseData = await response.json();
+      console.log('Newsletter generation successful:', responseData);
     } catch (error: any) {
       console.error('Error generating newsletter:', error);
       throw new Error(`Failed to generate newsletter: ${error instanceof Error ? error.message : String(error)}`);

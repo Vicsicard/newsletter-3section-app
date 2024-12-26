@@ -9,9 +9,9 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@getbrevo/brevo": "^2.2.0",
     "@headlessui/react": "^2.2.0",
     "@sendgrid/mail": "^8.1.0",
-    "@sendinblue/client": "^3.3.1",
     "@supabase/supabase-js": "^2.39.1",
     "@tailwindcss/forms": "^0.5.7",
     "@types/formidable": "^3.4.5",

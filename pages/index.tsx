@@ -87,10 +87,18 @@ export default function Home() {
         body: formData,
       });
 
-      const data = await response.json();
+      let data;
+      try {
+        data = await response.json();
+      } catch (parseError) {
+        console.error('Failed to parse response:', parseError);
+        const errorText = await response.text();
+        console.error('Raw response:', errorText);
+        throw new Error('Server returned invalid response. Please try again.');
+      }
 
       if (!response.ok) {
-        throw new Error(data.message || 'Server error occurred');
+        throw new Error(data?.message || 'Server error occurred');
       }
 
       if (data.success) {
