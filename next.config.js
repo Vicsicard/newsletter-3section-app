@@ -5,9 +5,13 @@ const nextConfig = {
   generateBuildId: async () => {
     return `build-${Date.now()}`;
   },
-  api: {
-    bodyParser: false,
-    externalResolver: true,
+  serverRuntimeConfig: {
+    bodyParser: {
+      sizeLimit: '10mb',
+    },
+  },
+  publicRuntimeConfig: {
+    apiTimeout: 60000,
   },
   headers: async () => {
     return [
@@ -30,15 +34,7 @@ const nextConfig = {
   },
   experimental: {
     serverComponentsExternalPackages: ['@supabase/supabase-js']
-  },
-  serverRuntimeConfig: {
-    bodyParser: {
-      sizeLimit: '10mb',
-    },
-  },
-  publicRuntimeConfig: {
-    apiTimeout: 60000,
-  },
+  }
 };
 
 module.exports = nextConfig;
