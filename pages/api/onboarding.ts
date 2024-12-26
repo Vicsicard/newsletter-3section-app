@@ -83,7 +83,7 @@ export default async function handler(
     });
 
     // Parse form data
-    const [fields, files] = await new Promise((resolve, reject) => {
+    const [fields, files] = await new Promise<[any, any]>((resolve, reject) => {
       form.parse(req, (err: Error | null, fields: any, files: any) => {
         if (err) {
           console.error('Form parsing error:', err);
