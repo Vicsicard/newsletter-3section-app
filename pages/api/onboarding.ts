@@ -229,25 +229,26 @@ export default async function handler(
         const content = await generateNewsletterContent({
           companyName: company.company_name,
           industry: company.industry || '',
-          targetAudience: company.target_audience || ''
+          targetAudience: company.target_audience || '',
+          audienceDescription: company.audience_description || ''
         });
 
         console.log('Content generated, creating newsletter record...');
 
-        // Create newsletter with generated content
+        // Insert newsletter data
+        console.log('Inserting newsletter data...');
         const { data: newsletter, error: newsletterError } = await supabaseAdmin
           .from('newsletters')
           .insert([
             {
               company_id: company.id,
-              title: `${company.company_name} Newsletter`,
+              title: content.title,
               status: 'draft',
-              content: content.content, // Using 'content' instead of 'newsletter_content'
+              industry_summary: content.industry_summary,
+              sections: content.sections,
               created_at: new Date().toISOString()
             }
-          ])
-          .select()
-          .single();
+          ]);
 
         if (newsletterError) {
           console.error('Newsletter creation error:', {

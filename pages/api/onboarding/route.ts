@@ -5,7 +5,7 @@ import { parseCSV } from '@/utils/csv';
 import { generateNewsletterContent } from '@/utils/newsletter';
 import fs from 'fs/promises';
 import type { OnboardingResponse, Company } from '@/types/form';
-import { ApiError } from '@/utils/errorHandler';
+import { ApiError, DatabaseError, ValidationError } from '@/utils/errors';
 
 // Disable body parsing, we'll handle the form data manually
 export const config = {
@@ -149,7 +149,7 @@ export default async function handler(
       companyName: companyData.company_name,
       industry: companyData.industry,
       targetAudience: companyData.target_audience,
-      companyDescription: companyData.audience_description || '',
+      audienceDescription: companyData.audience_description || '',
     });
 
     // Insert newsletter data
@@ -158,8 +158,10 @@ export default async function handler(
       .from('newsletters')
       .insert([{
         company_id: company.id,
-        content: newsletterContent.content,
-        title: newsletterContent.title || `${companyData.company_name} Newsletter`,
+        title: newsletterContent.title,
+        status: 'draft',
+        industry_summary: newsletterContent.industry_summary,
+        sections: newsletterContent.sections,
         created_at: new Date().toISOString(),
       }]);
 
@@ -180,7 +182,7 @@ export default async function handler(
     res.status(200).json(responseData);
   } catch (error) {
     console.error('Error in onboarding process:', error);
-    const apiError = error instanceof ApiError ? error : new ApiError('Internal server error', 500);
+    const apiError = error instanceof ApiError ? error : new DatabaseError('Internal server error');
     res.status(apiError.statusCode).json({
       success: false,
       message: apiError.message

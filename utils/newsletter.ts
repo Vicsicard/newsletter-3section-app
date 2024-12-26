@@ -4,60 +4,86 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-interface NewsletterContent {
+interface NewsletterSection {
+  title: string;
   content: string;
-  objectives?: string;
-  cta?: string;
+  image_url?: string;
+}
+
+interface NewsletterContent {
+  title: string;
+  sections: NewsletterSection[];
+  industry_summary: string;
 }
 
 interface NewsletterParams {
   companyName: string;
   industry: string;
   targetAudience: string;
+  audienceDescription: string;  // Changed from companyDescription to match DB field
+}
+
+async function generateImage(prompt: string): Promise<string> {
+  const image = await openai.images.generate({
+    prompt,
+    size: "1024x1024",
+    n: 1
+  });
+
+  if (!image.data[0]?.url) {
+    throw new Error('Failed to generate image');
+  }
+
+  return image.data[0].url;
+}
+
+async function generateIndustrySummary(industry: string): Promise<string> {
+  const industrySummaryPrompt = `Write a brief, engaging summary of the ${industry} industry, focusing on current trends, challenges, and opportunities. Keep it concise and informative.`;
+  const industrySummaryResponse = await openai.chat.completions.create({
+    model: "gpt-4",
+    messages: [{ role: "user", content: industrySummaryPrompt }]
+  });
+  const industrySummary = industrySummaryResponse.choices[0]?.message?.content || '';
+
+  return industrySummary;
 }
 
 export async function generateNewsletterContent(params: NewsletterParams): Promise<NewsletterContent> {
-  const { companyName, industry, targetAudience } = params;
+  const { companyName, industry, targetAudience, audienceDescription } = params;
 
-  const prompt = `Create a newsletter for ${companyName}, a company in the ${industry} industry.
-Their target audience is ${targetAudience}.
+  // Generate industry summary
+  const industrySummary = await generateIndustrySummary(industry);
 
-The newsletter should include:
-1. A compelling headline
-2. An engaging introduction
-3. Main content with valuable insights
-4. A clear call-to-action
+  // Generate sections
+  const sections = [];
+  const sectionTypes = ['Success Story', 'Industry Best Practices', 'Innovation Spotlight'];
 
-Keep the tone professional but friendly. Focus on providing value to the readers.`;
-
-  try {
-    console.log('Generating newsletter content with OpenAI...');
-    const completion = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo",
-      messages: [
-        {
-          role: "system",
-          content: "You are a professional newsletter writer who creates engaging, valuable content for businesses."
-        },
-        {
-          role: "user",
-          content: prompt
-        }
-      ],
-      temperature: 0.7,
-      max_tokens: 1000,
+  for (const type of sectionTypes) {
+    const sectionPrompt = `Write a compelling ${type} section for a newsletter targeting ${targetAudience} in the ${industry} industry. The company ${companyName} wants to engage ${audienceDescription}. Keep it informative and engaging.`;
+    const response = await openai.chat.completions.create({
+      model: "gpt-4",
+      messages: [{ role: "user", content: sectionPrompt }]
     });
+    const content = response.choices[0]?.message?.content || '';
 
-    const content = completion.choices[0]?.message?.content || '';
-    console.log('Newsletter content generated successfully');
+    // Generate a unique image for this section
+    const imagePrompt = `Create a professional, business-appropriate image for a ${type} section in a ${industry} industry newsletter. ${
+      type === 'Success Story' ? 'Show success and achievement.' :
+      type === 'Industry Best Practices' ? 'Illustrate professional best practices and excellence.' :
+      'Showcase innovation and forward-thinking concepts.'
+    }`;
+    const imageUrl = await generateImage(imagePrompt);
 
-    return {
+    sections.push({
+      title: type,
       content,
-      objectives: 'Engage and inform target audience',
-      cta: 'Contact us to learn more'
-    };
-  } catch (error) {
-    console.error('OpenAI API error:', error);
-    throw new Error('Failed to generate newsletter content');
+      image_url: imageUrl
+    });
   }
+
+  return {
+    title: `${companyName} Industry Insights`,
+    industry_summary: industrySummary,
+    sections
+  };
 }

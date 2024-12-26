@@ -1,13 +1,42 @@
 # Newsletter Generator App
 
 ## Overview
-A modern, full-stack newsletter generation and subscription management application built with Next.js, Supabase, and Brevo. The app uses GPT-3.5-turbo for content generation and provides a seamless workflow for creating and managing newsletters.
+A modern, full-stack newsletter generation and subscription management application built with Next.js, Supabase, and Brevo. The app uses GPT-3.5-turbo for content generation and DALL-E 3 for image generation, providing a seamless workflow for creating and managing newsletters.
+
+## Process Flow
+1. **Company Onboarding**
+   - Collect company information
+   - Import contact list via CSV
+   - Store data in Supabase
+
+2. **Industry Analysis**
+   - Generate comprehensive industry summary using GPT-3.5
+   - Analyze current trends and challenges
+   - Store analysis for content generation
+
+3. **Newsletter Generation**
+   - Create three distinct sections:
+     1. Industry Insights
+     2. Best Practices
+     3. Success Stories
+   - Generate section-specific images using DALL-E 3
+   - Store complete newsletter in Supabase
+
+4. **Newsletter Management**
+   - Preview generated content
+   - Edit and customize sections
+   - Approve or regenerate content
+
+5. **Email Distribution**
+   - Set up email campaigns via Brevo
+   - Schedule newsletter delivery
+   - Track engagement metrics
 
 ## Tech Stack
 - Frontend: Next.js 14
 - Backend: Supabase
 - Email Service: Brevo (Sendinblue)
-- AI: OpenAI GPT-3.5-turbo
+- AI: OpenAI GPT-3.5-turbo & DALL-E 3
 - Deployment: Vercel
 
 ## Features
@@ -16,6 +45,9 @@ A modern, full-stack newsletter generation and subscription management applicati
 - [x] Company profile management
 - [x] Multi-step onboarding process
 - [x] Error-resilient form handling
+- [x] Industry analysis generation
+- [x] Three-section newsletter structure
+- [x] AI-powered image generation
 - [ ] Newsletter preview and editing interface
 - [ ] Email campaign management
 - [ ] Analytics tracking
@@ -61,6 +93,22 @@ A modern, full-stack newsletter generation and subscription management applicati
 - Development: `npm run dev`
 - Build: `npm run build`
 - Start: `npm start`
+
+## ⚠️ Important Development Guidelines
+
+> **WARNING**: This application follows a carefully planned architecture and workflow. Before making any changes:
+> 1. Review the Process Flow section in this README
+> 2. Check the detailed implementation phases in PROJECT_STATUS.md
+> 3. Ensure changes align with the existing architecture
+> 4. DO NOT delete or modify core files without consulting these documents
+> 5. Any changes to the database schema must follow the established patterns
+
+The success of this application relies on maintaining consistency with this documented approach. Each component has been designed to work together in a specific way.
+
+## Documentation
+- [Project Status](PROJECT_STATUS.md) - Current status and implementation phases
+- [Architecture](ARCHITECTURE.md) - Detailed technical documentation and best practices
+- [API Documentation](API.md) - API endpoints and usage
 
 ## Current Status
 - Company creation and management

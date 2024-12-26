@@ -12,15 +12,17 @@ export interface FormErrors {
 }
 
 export interface Company {
-  id?: string;
-  name: string;
+  id: string;
+  company_name: string;
   website_url?: string;
   contact_email: string;
   phone_number?: string;
   industry: string;
   target_audience: string;
-  company_description?: string;
-  created_at?: string;
+  audience_description: string;
+  newsletter_objectives: string;
+  primary_cta: string;
+  contacts_count: number;
 }
 
 export interface OnboardingResponse {
