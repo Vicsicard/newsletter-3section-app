@@ -1,10 +1,12 @@
-import { TransactionalEmailsApi, SendSmtpEmail } from '@getbrevo/brevo';
+import * as SibApiV3Sdk from '@getbrevo/brevo';
 
-const apiInstance = new TransactionalEmailsApi();
-apiInstance.authentications['apiKey'].apiKey = process.env.BREVO_API_KEY || '';
+const apiConfiguration = new SibApiV3Sdk.Configuration();
+apiConfiguration.apiKey = process.env.BREVO_API_KEY || '';
+
+const apiInstance = new SibApiV3Sdk.TransactionalEmailsApi(apiConfiguration);
 
 export async function sendEmail(to: string, subject: string, htmlContent: string) {
-  const sendSmtpEmail = new SendSmtpEmail();
+  const sendSmtpEmail = new SibApiV3Sdk.SendSmtpEmail();
   
   sendSmtpEmail.subject = subject;
   sendSmtpEmail.htmlContent = htmlContent;
