@@ -1,5 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import formidable, { File, Part, Fields } from 'formidable';
+import formidable from 'formidable';
+import type { Fields, Files, Part } from 'formidable';
 import { supabaseAdmin } from '@/utils/supabase';
 import { parseCSV } from '@/utils/csv';
 import { generateNewsletterContent } from '@/utils/newsletter';
@@ -83,8 +84,8 @@ export default async function handler(
     });
 
     // Parse form data
-    const [fields, files] = await new Promise<[Fields, { [key: string]: File[] }]>((resolve, reject) => {
-      form.parse(req, (err: Error | null, fields: Fields, files: { [key: string]: File[] }) => {
+    const [fields, files] = await new Promise<[Fields, Files]>((resolve, reject) => {
+      form.parse(req, (err: Error | null, fields: Fields, files: Files) => {
         if (err) {
           console.error('Form parsing error:', err);
           reject(err);
