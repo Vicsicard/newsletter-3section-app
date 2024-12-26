@@ -30,6 +30,13 @@ A modern web application that automates the creation and delivery of personalize
 - Success/error feedback
 - Engaging user interactions
 
+## Recent Updates
+- **Build Process Improvements**
+  - Added cross-platform prebuild script
+  - Enhanced Vercel deployment compatibility
+  - Improved build directory management
+  - Resolved deployment script issues
+
 ## Tech Stack
 
 - **Frontend**: Next.js, TypeScript, Tailwind CSS, React
@@ -75,9 +82,14 @@ A modern web application that automates the creation and delivery of personalize
    ```
 
 ## Last Updated
-- Date: 2024-12-25
-- Time: 20:04:12 PDT
-- Status: Project is actively being developed and updated. All components are functional and under testing.
+- Date: 2024-12-26
+- Time: 09:39:00 PDT
+- Status: Project is actively being developed. Build process optimized for deployment.
+
+## Deployment Notes
+- Uses `rimraf` for cross-platform build directory cleaning
+- Verified local and Vercel build compatibility
+- Recommended deployment platform: Vercel
 
 ## Database Schema
 

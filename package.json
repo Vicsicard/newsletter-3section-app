@@ -3,11 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "prebuild": "rimraf .next dist",
     "dev": "next dev",
-    "prebuild": "if exist .next rmdir /s /q .next && if exist dist rmdir /s /q dist",
-    "build": "next build && tsc --project tsconfig.server.json",
-    "postbuild": "echo Build completed successfully",
-    "start": "cross-env NODE_ENV=production ts-node --project tsconfig.server.json server.ts",
+    "build": "npm run prebuild && next build",
+    "start": "next start",
     "lint": "next lint"
   },
   "dependencies": {
