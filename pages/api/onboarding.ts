@@ -5,7 +5,7 @@ import { parseCSV } from '@/utils/csv';
 import { generateNewsletterContent } from '@/utils/newsletter';
 import fs from 'fs/promises';
 import type { OnboardingResponse, Company } from '@/types/form';
-import { ApiError } from '@/utils/errorHandler';
+import { ApiError, DatabaseError, ValidationError } from '@/utils/errors';
 
 // Disable body parsing, we'll handle the form data manually
 export const config = {
@@ -82,9 +82,17 @@ export default async function handler(
       },
     });
 
-    // Parse form data
-    const [fields, files] = await new Promise<[any, any]>((resolve, reject) => {
-      form.parse(req, (err: Error | null, fields: any, files: any) => {
+    type FormFields = {
+      [key: string]: string | string[];
+    };
+
+    type FormFiles = {
+      [key: string]: formidable.File | formidable.File[];
+    };
+
+    // Parse form data with proper typing
+    const [fields, files] = await new Promise<[FormFields, FormFiles]>((resolve, reject) => {
+      form.parse(req, (err: Error | null, fields: FormFields, files: FormFiles) => {
         if (err) {
           console.error('Form parsing error:', err);
           reject(err);
@@ -96,212 +104,98 @@ export default async function handler(
       });
     });
 
-    // Set headers
-    res.setHeader('Content-Type', 'application/json');
-    res.setHeader('Cache-Control', 'no-store');
+    // Extract company data
+    const companyData = {
+      company_name: Array.isArray(fields.company_name) ? fields.company_name[0] : fields.company_name,
+      website_url: Array.isArray(fields.website_url) ? fields.website_url[0] : fields.website_url,
+      contact_email: Array.isArray(fields.contact_email) ? fields.contact_email[0] : fields.contact_email,
+      phone_number: Array.isArray(fields.phone_number) ? fields.phone_number[0] : fields.phone_number,
+      industry: Array.isArray(fields.industry) ? fields.industry[0] : fields.industry,
+      target_audience: Array.isArray(fields.target_audience) ? fields.target_audience[0] : fields.target_audience,
+      audience_description: Array.isArray(fields.audience_description) ? fields.audience_description[0] : fields.audience_description,
+      newsletter_objectives: Array.isArray(fields.newsletter_objectives) ? fields.newsletter_objectives[0] : fields.newsletter_objectives,
+      primary_cta: Array.isArray(fields.primary_cta) ? fields.primary_cta[0] : fields.primary_cta,
+      contacts_count: 0, // Will be updated after processing contacts
+      created_at: new Date().toISOString(),
+    };
 
-    // Validate required fields
-    const companyName = fields.company_name?.toString();
-    const websiteUrl = fields.website_url?.toString();
-    const contactEmail = fields.contact_email?.toString();
-    const phoneNumber = fields.phone_number?.toString();
-    const industry = fields.industry?.toString();
-    const targetAudience = fields.target_audience?.toString();
-
-    console.log('Received fields:', {
-      companyName,
-      websiteUrl,
-      contactEmail,
-      phoneNumber,
-      industry,
-      targetAudience,
-      files: Object.keys(files)
-    });
-
-    // For testing, only require company name and email
-    if (!companyName || !contactEmail) {
-      responseData.message = 'Company name and contact email are required';
-      return res.status(400).json(responseData);
-    }
-
-    // Process CSV file
-    console.log('Processing CSV file...');
-    const csvFiles = files.contact_list;
-    let contacts: any[] = [];
-
-    if (csvFiles && Array.isArray(csvFiles) && csvFiles.length > 0) {
-      const csvFile = csvFiles[0];
-      if (csvFile.originalFilename?.toLowerCase().endsWith('.csv')) {
-        try {
-          console.log('Reading CSV file:', csvFile.originalFilename);
-          const csvContent = await fs.readFile(csvFile.filepath, 'utf-8');
-          contacts = await parseCSV(csvContent);
-          console.log(`Parsed ${contacts.length} contacts from CSV`);
-        } catch (error) {
-          console.error('Error parsing CSV:', error);
-          throw new Error('Failed to parse CSV file');
-        }
-      }
-    } else {
-      console.log('No CSV file uploaded, skipping contact import');
-    }
-
-    // Create company in Supabase
-    console.log('Creating company in Supabase...');
-    const { data: existingCompany } = await supabaseAdmin
+    // Insert company data
+    console.log('Inserting company data...');
+    const { data: company, error: insertError } = await supabaseAdmin
       .from('companies')
-      .select('id, version')
-      .eq('contact_email', contactEmail)
-      .order('version', { ascending: false })
-      .limit(1)
-      .single();
-
-    const { data: company, error: companyError } = await supabaseAdmin
-      .from('companies')
-      .insert([
-        {
-          company_name: companyName,
-          website_url: websiteUrl || null,
-          contact_email: contactEmail,
-          phone_number: phoneNumber || null,
-          industry,
-          target_audience: targetAudience,
-          status: 'active',
-          version: existingCompany ? (existingCompany.version + 1) : 1
-        }
-      ])
+      .insert([companyData])
       .select()
       .single();
 
-    if (companyError) {
-      console.error('Supabase Error:', {
-        message: companyError.message,
-        details: companyError.details,
-        hint: companyError.hint,
-        code: companyError.code
-      });
-      throw new Error(`Failed to create company: ${companyError.message}`);
+    if (insertError) {
+      console.error('Company insertion error:', insertError);
+      throw new Error(`Failed to insert company data: ${insertError.message}`);
     }
 
-    if (!company) {
-      throw new Error('Company created but not returned from Supabase');
+    console.log('Company data inserted successfully');
+
+    // Process contact list if provided
+    let contacts = [];
+    if (files.contact_list) {
+      const file = Array.isArray(files.contact_list) ? files.contact_list[0] : files.contact_list;
+      const fileContent = await fs.readFile(file.filepath, 'utf-8');
+      contacts = await parseCSV(fileContent);
+      console.log(`Parsed ${contacts.length} contacts from CSV`);
     }
 
-    console.log('Company created:', company);
+    // Generate newsletter content
+    console.log('Generating newsletter content...');
+    const newsletterContent = await generateNewsletterContent({
+      companyName: companyData.company_name,
+      industry: companyData.industry,
+      targetAudience: companyData.target_audience,
+      audienceDescription: companyData.audience_description || '',
+    });
 
-    // Insert contacts
-    console.log('Importing contacts to Supabase...');
-    const batchSize = 100;
-    let failedContacts = 0;
-    for (let i = 0; i < contacts.length; i += batchSize) {
-      const batch = contacts.slice(i, i + batchSize).map(contact => ({
+    // Insert newsletter data
+    console.log('Inserting newsletter data...');
+    const { error: newsletterError } = await supabaseAdmin
+      .from('newsletters')
+      .insert([{
         company_id: company.id,
-        name: contact.name,
-        email: contact.email,
-        status: 'active',
+        title: newsletterContent.title,
+        status: 'draft',
+        industry_summary: newsletterContent.industry_summary,
+        sections: newsletterContent.sections,
         created_at: new Date().toISOString(),
-      }));
+      }]);
 
-      const { error: contactsError } = await supabaseAdmin
-        .from('contacts')
-        .insert(batch);
-
-      if (contactsError) {
-        console.error('Contact import error:', contactsError);
-        failedContacts += batch.length;
-      }
+    if (newsletterError) {
+      console.error('Newsletter insertion error:', newsletterError);
+      throw new Error(`Failed to insert newsletter data: ${newsletterError.message}`);
     }
 
-    console.log(`Successfully imported ${contacts.length - failedContacts} contacts`);
+    console.log('Newsletter data inserted successfully');
 
-    // Clean up file
-    if (csvFiles && Array.isArray(csvFiles) && csvFiles.length > 0) {
-      const csvFile = csvFiles[0];
-      await fs.unlink(csvFile.filepath);
-    }
+    // Set success response
+    responseData = {
+      success: true,
+      message: 'Company and newsletter created successfully',
+      company: company
+    };
 
-    // Generate and store newsletter
-    if (process.env.OPENAI_API_KEY) {
-      try {
-        console.log('Generating newsletter content...');
-        
-        // Generate content first
-        const content = await generateNewsletterContent({
-          companyName: company.company_name,
-          industry: company.industry || '',
-          targetAudience: company.target_audience || '',
-          audienceDescription: company.audience_description || ''
-        });
-
-        console.log('Content generated, creating newsletter record...');
-
-        // Insert newsletter data
-        console.log('Inserting newsletter data...');
-        const { data: newsletter, error: newsletterError } = await supabaseAdmin
-          .from('newsletters')
-          .insert([
-            {
-              company_id: company.id,
-              title: content.title,
-              status: 'draft',
-              industry_summary: content.industry_summary,
-              sections: content.sections,
-              created_at: new Date().toISOString()
-            }
-          ]);
-
-        if (newsletterError) {
-          console.error('Newsletter creation error:', {
-            error: newsletterError,
-            message: newsletterError.message,
-            details: newsletterError.details,
-            hint: newsletterError.hint,
-            code: newsletterError.code
-          });
-          throw new Error(`Failed to create newsletter: ${newsletterError.message}`);
-        }
-
-        if (!newsletter) {
-          throw new Error('Newsletter created but not returned from Supabase');
-        }
-
-        console.log('Newsletter created successfully:', newsletter);
-        
-        responseData.success = true;
-        responseData.message = 'Company created, contacts imported, and newsletter generated successfully';
-        responseData.company = company;
-        return res.status(200).json(responseData);
-      } catch (error) {
-        console.error('Newsletter generation error:', error);
-        responseData.success = true; // Still true because company and contacts were successful
-        responseData.message = `Company created and contacts imported. Newsletter generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`;
-        responseData.company = company;
-        return res.status(200).json(responseData);
-      }
-    } else {
-      console.log('Skipping newsletter generation - OpenAI API key not set');
-      responseData.success = true;
-      responseData.message = 'Company created and contacts imported. Skipped newsletter generation (OpenAI API key not set)';
-      responseData.company = company;
-      return res.status(200).json(responseData);
-    }
-
+    res.status(200).json(responseData);
   } catch (error) {
-    console.error('API error:', error);
-    responseData.message = error instanceof Error ? error.message : 'An unexpected error occurred';
-    return res.status(500).json(responseData);
+    console.error('Error in onboarding process:', error);
+    const apiError = error instanceof ApiError ? error : new DatabaseError('Internal server error');
+    res.status(apiError.statusCode).json({
+      success: false,
+      message: apiError.message
+    });
   }
 }
 
 async function testSupabaseConnection() {
   try {
-    const { error } = await supabaseAdmin.from('companies').select('id').limit(1);
-    if (error) {
-      throw error;
-    }
-    return true;
+    const { data, error } = await supabaseAdmin.from('companies').select('count').limit(0);
+    return !error;
   } catch (error) {
-    console.error('Supabase connection test failed:', error);
+    console.error('Supabase connection test error:', error);
     return false;
   }
 }

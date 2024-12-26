@@ -84,7 +84,7 @@ export default function Home() {
     }
 
     // Use the new route path
-    const url = '/api/onboarding/route';
+    const url = '/api/onboarding';
     console.log('Submitting to:', url);
 
     return new Promise((resolve, reject) => {
@@ -168,49 +168,7 @@ export default function Home() {
           id="onboardingForm"
           className="space-y-6" 
           encType="multipart/form-data"
-          onSubmit={(e) => {
-            e.preventDefault();
-            const formData = new FormData(e.currentTarget);
-            const xhr = new XMLHttpRequest();
-            xhr.open('POST', '/api/onboarding', true);
-            
-            xhr.onload = function() {
-              console.log('Response received:', {
-                status: xhr.status,
-                statusText: xhr.statusText,
-                response: xhr.responseText
-              });
-              
-              if (xhr.status === 200) {
-                try {
-                  const response = JSON.parse(xhr.responseText);
-                  if (response.success) {
-                    setIsSuccess(true);
-                    setSuccess(response.message || 'Success!');
-                  } else {
-                    setError(response.message || 'Request failed');
-                  }
-                } catch (err) {
-                  setError('Failed to parse response');
-                }
-              } else {
-                setError(`Server error: ${xhr.status}`);
-              }
-              
-              setIsLoading(false);
-              setShowModal(false);
-            };
-            
-            xhr.onerror = function() {
-              setError('Network error occurred');
-              setIsLoading(false);
-              setShowModal(false);
-            };
-            
-            setIsLoading(true);
-            setShowModal(true);
-            xhr.send(formData);
-          }}
+          onSubmit={handleSubmit}
         >
           <div>
             <label htmlFor="company_name" className="block text-sm font-medium text-gray-700">
