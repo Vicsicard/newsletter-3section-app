@@ -22,6 +22,8 @@ export async function POST(req: NextRequest) {
       contact_email: formData.get('contact_email') as string,
       phone_number: formData.get('phone_number') as string,
       industry: formData.get('industry') as string,
+      target_audience: formData.get('target_audience') as string,
+      audience_description: formData.get('audience_description') as string,
       status: 'active' as const,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
@@ -29,8 +31,6 @@ export async function POST(req: NextRequest) {
 
     // Store newsletter-specific data separately
     const newsletterMetadata = {
-      target_audience: formData.get('target_audience') as string,
-      audience_description: formData.get('audience_description') as string,
       newsletter_objectives: formData.get('newsletter_objectives') as string,
       primary_cta: formData.get('primary_cta') as string,
     };
@@ -81,8 +81,8 @@ export async function POST(req: NextRequest) {
     const newsletterContent = await generateNewsletterContent({
       companyName: companyData.company_name,
       industry: companyData.industry,
-      targetAudience: newsletterMetadata.target_audience,
-      audienceDescription: newsletterMetadata.audience_description,
+      targetAudience: companyData.target_audience,
+      audienceDescription: companyData.audience_description,
       objectives: newsletterMetadata.newsletter_objectives,
       primaryCta: newsletterMetadata.primary_cta,
     });
