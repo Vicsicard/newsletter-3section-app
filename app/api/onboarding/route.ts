@@ -52,27 +52,29 @@ export async function POST(req: NextRequest) {
 
     // Process contact list if provided
     const contactListFile = formData.get('contact_list') as File;
-    let contacts = [];
-    if (contactListFile) {
+    if (contactListFile && contactListFile.size > 0) {
+      console.log('Processing contact list file...');
       const fileContent = await contactListFile.text();
-      contacts = await parseCSV(fileContent);
+      const contacts = await parseCSV(fileContent);
       
       // Add company_id to each contact
-      contacts = contacts.map(contact => ({
+      const contactsWithCompanyId = contacts.map(contact => ({
         ...contact,
         company_id: company.id,
       }));
 
       // Insert contacts in batches
-      if (contacts.length > 0) {
+      if (contactsWithCompanyId.length > 0) {
+        console.log(`Inserting ${contactsWithCompanyId.length} contacts...`);
         const { error: contactsError } = await supabaseAdmin
           .from('contacts')
-          .insert(contacts);
+          .insert(contactsWithCompanyId);
 
         if (contactsError) {
           console.error('Contacts insertion error:', contactsError);
           throw new DatabaseError(`Failed to insert contacts: ${contactsError.message}`);
         }
+        console.log('Contacts inserted successfully');
       }
     }
 
@@ -114,7 +116,7 @@ export async function POST(req: NextRequest) {
       message: 'Company and newsletter created successfully',
       data: {
         company_id: company.id,
-        total_contacts: contacts.length,
+        total_contacts: contactsWithCompanyId ? contactsWithCompanyId.length : 0,
         failed_contacts: 0,
         status: 'success'
       }
