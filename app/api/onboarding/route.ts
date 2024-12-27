@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
     
     // Extract company data from FormData
     const companyData = {
-      name: formData.get('company_name') as string,
+      company_name: formData.get('company_name') as string,
       website_url: formData.get('website_url') as string,
       contact_email: formData.get('contact_email') as string,
       status: 'active' as const,
@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
     // Generate newsletter content
     console.log('Generating newsletter content...');
     const newsletterContent = await generateNewsletterContent({
-      companyName: companyData.name,
+      companyName: companyData.company_name,
       industry: formData.get('industry') as string,
       targetAudience: formData.get('target_audience') as string,
       audienceDescription: formData.get('audience_description') as string || '',
