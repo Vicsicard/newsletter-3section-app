@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, FormEvent, useEffect, useRef } from 'react';
+import { useState, FormEvent, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { validateForm } from '@/utils/validation';
 import { industryTemplates, getIndustryNames } from '@/utils/industryTemplates';
@@ -35,6 +35,11 @@ export default function Home() {
   const firstInputRef = useRef<HTMLInputElement>(null);
   const industryButtonsRef = useRef<(HTMLButtonElement | null)[]>([]);
   const modalRef = useRef<HTMLDivElement>(null);
+
+  // Add callback for ref setting
+  const setIndustryButtonRef = useCallback((el: HTMLButtonElement | null, index: number) => {
+    industryButtonsRef.current[index] = el;
+  }, []);
 
   // Focus first input on mount
   useEffect(() => {
@@ -215,7 +220,7 @@ export default function Home() {
           <button
             key={value}
             type="button"
-            ref={el => industryButtonsRef.current[index] = el}
+            ref={(el) => setIndustryButtonRef(el, index)}
             onClick={() => handleIndustrySelect(value)}
             onKeyDown={(e) => handleIndustryKeyDown(e, value)}
             className={`p-4 rounded-lg border-2 transition-all duration-200 hover:shadow-md ${
