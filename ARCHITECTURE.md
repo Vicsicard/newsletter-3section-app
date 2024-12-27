@@ -108,7 +108,8 @@
     company_id UUID REFERENCES companies(id),
     email TEXT NOT NULL,
     name TEXT,
-    subscribed BOOLEAN DEFAULT true
+    status TEXT DEFAULT 'active',
+    created_at TIMESTAMP WITH TIME ZONE
   )
   ```
 
