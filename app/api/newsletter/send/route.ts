@@ -3,6 +3,7 @@ import { supabaseAdmin } from '@/utils/supabase-admin';
 import { sendEmail, EmailResponse } from '@/utils/email';
 import { generateEmailHTML, generatePlainText } from '@/utils/email-template';
 import { parseNewsletterSection } from '@/utils/newsletter';
+import type { Newsletter, NewsletterContact } from '@/types';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -28,7 +29,7 @@ export async function POST(req: NextRequest) {
         )
       `)
       .eq('id', newsletterId)
-      .single();
+      .single<Newsletter>();
 
     if (newsletterError) {
       throw new Error(`Failed to fetch newsletter: ${newsletterError.message}`);
@@ -59,8 +60,8 @@ export async function POST(req: NextRequest) {
     );
 
     // Send to all contacts
-    const contacts = newsletter.newsletter_contacts.map(nc => nc.contacts).filter(Boolean);
-    const emailPromises = contacts.map(async (contact: { email: string }) => {
+    const contacts = newsletter.newsletter_contacts.map((nc: NewsletterContact) => nc.contacts).filter(Boolean);
+    const emailPromises = contacts.map(async (contact) => {
       return sendEmail(
         contact.email,
         `${newsletter.companies.company_name} - Industry Newsletter`,

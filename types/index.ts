@@ -11,12 +11,9 @@ export interface Company {
 
 // Contact Types
 export interface Contact {
-  id?: string;
-  company_id?: string;
+  id: string;
   email: string;
-  first_name?: string;
-  last_name?: string;
-  is_active?: boolean;
+  company_id: string;
   created_at?: string;
   updated_at?: string;
 }
@@ -25,9 +22,34 @@ export interface Contact {
 export interface Newsletter {
   id: string;
   company_id: string;
-  status: 'draft' | 'pending_approval' | 'revision_requested' | 'approved' | 'scheduled' | 'sent';
-  created_at: string;
+  status: string;
+  industry_summary: string;
+  section1_content: string;
+  section2_content: string;
+  section3_content: string;
+  created_at?: string;
   updated_at?: string;
+  sent_at?: string;
+  sent_count?: number;
+  failed_count?: number;
+  last_sent_status?: string;
+  newsletter_objectives?: string;
+  primary_cta?: string;
+  companies: {
+    company_name: string;
+    industry: string;
+    contact_email: string;
+  };
+  newsletter_contacts: NewsletterContact[];
+}
+
+// Newsletter Contact Types
+export interface NewsletterContact {
+  id: string;
+  newsletter_id: string;
+  contact_id: string;
+  created_at?: string;
+  contacts: Contact;
 }
 
 // CSV Upload Types
