@@ -1,141 +1,93 @@
-# AI-Powered Newsletter Generator
+# Newsletter Form Application
 
-## Overview
-A powerful newsletter generation application built with Next.js, OpenAI, and Supabase. This application allows businesses to create professional, AI-generated newsletters with customized content and automated email delivery.
+A modern, accessible newsletter setup form with industry-specific templates and smart defaults.
 
 ## Features
-- 🤖 AI-powered content generation using OpenAI GPT-4
-- 🎨 Three-section newsletter format:
-  - Pain Point Analysis
-  - Common Mistakes
-  - Company Solutions
-- 🖼️ Ultra-realistic DALL-E 3 generated images
-  - Professional photography aesthetics
-  - No text or people in images
-  - Focus on objects and environments
-- 📊 Contact management with CSV import
-- 📧 Automated email delivery via Brevo
-- 🔐 Secure authentication and data storage with Supabase
-- 📱 Responsive design for all devices
 
-## Tech Stack
-- **Frontend**: Next.js, React, TypeScript
-- **Backend**: Next.js API Routes
-- **Database**: Supabase (PostgreSQL)
-- **AI Services**: OpenAI GPT-4, Replicate
-- **Email Service**: Brevo
-- **Styling**: Tailwind CSS
-- **Deployment**: Vercel
+### 1. Smart Industry Templates
+- Pre-built templates for 6 major industries
+- Customized content suggestions
+- Industry-specific target audience definitions
+- Recommended CTAs
 
-## Prerequisites
-- Node.js (v16+ recommended)
-- npm or yarn
-- Supabase account
-- OpenAI API key
-- Brevo API key
-- Replicate API key
+### 2. Interactive Progress Tracking
+- Real-time progress indication
+- Visual section completion
+- Tooltip-enabled progress markers
+- Responsive sidebar design
 
-## Environment Variables
-Create a `.env.local` file with the following variables:
-```env
-OPENAI_API_KEY=your_openai_api_key
-SUPABASE_URL=your_supabase_url
-SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
-SUPABASE_ANON_KEY=your_supabase_anon_key
-REPLICATE_API_KEY=your_replicate_api_key
-BREVO_API_KEY=your_brevo_api_key
-BREVO_SENDER_EMAIL=your_verified_sender_email
-BREVO_SENDER_NAME=your_sender_name
-BASE_URL=http://localhost:3000
-NODE_ENV=development
-```
+### 3. Accessibility Features
+- ARIA labels for screen readers
+- Keyboard navigation support
+- Focus management system
+- Accessible error handling
 
 ## Getting Started
 
+### Prerequisites
+- Node.js 16.x or higher
+- npm or yarn
+
+### Installation
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/newsletter-generator.git
-cd newsletter-generator
+git clone [repository-url]
 ```
 
 2. Install dependencies:
 ```bash
 npm install
+# or
+yarn install
 ```
 
-3. Set up environment variables:
-- Copy `.env.example` to `.env.local`
-- Fill in your API keys and configuration
-
-4. Run the development server:
+3. Run the development server:
 ```bash
 npm run dev
+# or
+yarn dev
 ```
 
-5. Open [http://localhost:3000](http://localhost:3000) in your browser
+## Usage
 
-## Key Features
+### Keyboard Navigation
+- **Tab**: Navigate through form fields
+- **Arrow Keys**: Navigate industry selection grid
+- **Space/Enter**: Select options or activate buttons
+- **Escape**: Close modals
 
-### 1. Newsletter Generation
-- AI-powered content generation
-- Industry-specific customization
-- Three-section format
-- Professional templates
+### Industry Templates
+1. Select your industry from the grid
+2. Review pre-filled content
+3. Customize as needed
+4. Complete remaining sections
 
-### 2. Contact Management
-- CSV contact import
-- Contact status tracking
-- Automatic list management
-- Unsubscribe handling
+## Accessibility
 
-### 3. Email Delivery
-- Automated sending
-- Delivery tracking
-- Error handling
-- Status monitoring
+### ARIA Labels
+All interactive elements include proper ARIA labels for screen reader compatibility:
+- Form controls
+- Progress indicators
+- Error messages
+- Modal dialogs
 
-### 4. User Interface
-- Intuitive dashboard
-- Real-time preview
-- Mobile responsive
-- Modern design
-
-## Production Deployment
-
-The application is deployed on Vercel. To deploy your own instance:
-
-1. Push your code to GitHub
-2. Connect your repository to Vercel
-3. Configure environment variables in Vercel
-4. Deploy!
-
-## Database Schema
-
-The application uses Supabase with the following main tables:
-- `companies`: Company information
-- `contacts`: Contact list management
-- `newsletters`: Newsletter content and metadata
-- `newsletter_contacts`: Junction table for newsletter-contact relationships
+### Focus Management
+- Automatic focus on form load
+- Modal focus trapping
+- Proper focus return points
+- Keyboard-friendly navigation
 
 ## Contributing
-
 1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
+2. Create your feature branch
+3. Commit your changes
+4. Push to the branch
 5. Open a Pull Request
 
 ## License
-This project is licensed under the MIT License - see the LICENSE file for details
-
-## Support
-For support, email support@example.com or open an issue in the repository.
+This project is licensed under the MIT License - see the LICENSE file for details.
 
 ## Acknowledgments
-- OpenAI for GPT API
-- Supabase team for the amazing database service
-- Brevo for email delivery
-- Vercel for hosting
-
-## Status
-✅ Production Ready - Version 1.0.0
+- Next.js team for the framework
+- Tailwind CSS for styling
+- React community for components
