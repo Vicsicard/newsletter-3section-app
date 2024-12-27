@@ -60,39 +60,44 @@ export async function POST(req: NextRequest) {
     let totalContacts = 0;
 
     if (contactListFile && contactListFile.size > 0) {
-      console.log('Processing contact list file...');
-      const fileContent = await contactListFile.text();
-      console.log('CSV content:', fileContent); // Debug log
-      
-      const contacts = await parseCSV(fileContent);
-      console.log('Parsed contacts:', contacts); // Debug log
-
-      if (!company?.id) {
-        console.error('Company ID is missing');
-        throw new DatabaseError('Failed to process contacts: Company ID is missing');
-      }
-
-      // Add company_id to each contact
-      const contactsWithCompanyId = contacts.map(contact => ({
-        ...contact,
-        company_id: company.id,
-      }));
-
-      // Insert contacts in batches
-      if (contactsWithCompanyId.length > 0) {
-        console.log(`Inserting ${contactsWithCompanyId.length} contacts...`);
-        console.log('First contact:', contactsWithCompanyId[0]); // Debug log
+      try {
+        console.log('Processing contact list file...');
+        const fileContent = await contactListFile.text();
+        console.log('CSV content:', fileContent); // Debug log
         
-        const { error: contactsError } = await supabaseAdmin
-          .from('contacts')
-          .insert(contactsWithCompanyId);
+        const contacts = await parseCSV(fileContent);
+        console.log('Parsed contacts:', contacts); // Debug log
 
-        if (contactsError) {
-          console.error('Contacts insertion error:', contactsError);
-          throw new DatabaseError(`Failed to insert contacts: ${contactsError.message}`);
+        if (!company?.id) {
+          console.error('Company ID is missing');
+          throw new DatabaseError('Failed to process contacts: Company ID is missing');
         }
-        console.log('Contacts inserted successfully');
-        totalContacts = contactsWithCompanyId.length;
+
+        // Add company_id to each contact
+        const contactsWithCompanyId = contacts.map(contact => ({
+          ...contact,
+          company_id: company.id,
+        }));
+
+        // Insert contacts in batches
+        if (contactsWithCompanyId.length > 0) {
+          console.log(`Inserting ${contactsWithCompanyId.length} contacts...`);
+          console.log('First contact:', contactsWithCompanyId[0]); // Debug log
+          
+          const { error: contactsError } = await supabaseAdmin
+            .from('contacts')
+            .insert(contactsWithCompanyId);
+
+          if (contactsError) {
+            console.error('Contacts insertion error:', contactsError);
+            throw new DatabaseError(`Failed to insert contacts: ${contactsError.message}`);
+          }
+          console.log('Contacts inserted successfully');
+          totalContacts = contactsWithCompanyId.length;
+        }
+      } catch (error) {
+        console.error('Error processing contacts:', error);
+        throw new Error(`Failed to process contacts: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
     }
 
