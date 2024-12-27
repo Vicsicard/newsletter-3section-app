@@ -4,8 +4,15 @@
 A powerful newsletter generation application built with Next.js, OpenAI, and Supabase. This application allows businesses to create professional, AI-generated newsletters with customized content and automated email delivery.
 
 ## Features
-- 🤖 AI-powered content generation using OpenAI GPT
-- 🎨 Professional newsletter templates
+- 🤖 AI-powered content generation using OpenAI GPT-4
+- 🎨 Three-section newsletter format:
+  - Pain Point Analysis
+  - Common Mistakes
+  - Company Solutions
+- 🖼️ Ultra-realistic DALL-E 3 generated images
+  - Professional photography aesthetics
+  - No text or people in images
+  - Focus on objects and environments
 - 📊 Contact management with CSV import
 - 📧 Automated email delivery via Brevo
 - 🔐 Secure authentication and data storage with Supabase

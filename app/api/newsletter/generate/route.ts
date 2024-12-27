@@ -91,12 +91,14 @@ export async function POST(req: NextRequest) {
         model: "gpt-4",
         messages: [{
           role: "system",
-          content: "You are an expert at creating prompts for DALL-E 3 to generate professional business images. Create prompts that are specific, detailed, and result in high-quality, photorealistic business imagery. Focus on professional settings, modern aesthetics, and business-appropriate scenes."
+          content: "You are an expert at creating prompts for DALL-E 3 to generate ultra-realistic photographic images. Create prompts that result in high-quality, photorealistic imagery that looks like it was taken with a professional camera. Focus on objects, environments, and abstract concepts. IMPORTANT RULES: 1) NEVER include people in the images 2) NEVER include any text or writing 3) Always maintain photographic realism - images should look like they were captured by a professional photographer 4) Use natural lighting and professional photography techniques in the descriptions."
         }, {
           role: "user",
-          content: `Create a DALL-E 3 prompt for a professional image that represents: "${title}" for a ${company.industry} company targeting ${company.target_audience || 'general audience'}.
-          The image should be photorealistic, modern, and business-appropriate.
-          Make it specific and detailed but keep it under 200 characters.`
+          content: `Create a DALL-E 3 prompt for an ultra-realistic photograph that represents: "${title}" for a ${company.industry} company targeting ${company.target_audience || 'general audience'}.
+            The image must be photorealistic like a professional photograph, without any people or text.
+            Focus on objects, environments, or abstract concepts that symbolize the theme.
+            Use professional photography terms (depth of field, lighting, composition).
+            Make it specific and detailed but keep it under 200 characters.`
         }]
       });
 
