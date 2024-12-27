@@ -15,17 +15,24 @@ export async function POST(req: NextRequest) {
     // Get form data
     const formData = await req.formData();
     
-    // Extract company data from FormData
+    // Extract company data from FormData - only fields that exist in the database
     const companyData = {
       company_name: formData.get('company_name') as string,
       website_url: formData.get('website_url') as string,
       contact_email: formData.get('contact_email') as string,
+      phone_number: formData.get('phone_number') as string,
       industry: formData.get('industry') as string,
-      target_audience: formData.get('target_audience') as string,
-      audience_description: formData.get('audience_description') as string,
       status: 'active' as const,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
+    };
+
+    // Store newsletter-specific data separately
+    const newsletterMetadata = {
+      target_audience: formData.get('target_audience') as string,
+      audience_description: formData.get('audience_description') as string,
+      newsletter_objectives: formData.get('newsletter_objectives') as string,
+      primary_cta: formData.get('primary_cta') as string,
     };
 
     // Insert company data
@@ -73,9 +80,11 @@ export async function POST(req: NextRequest) {
     console.log('Generating newsletter content...');
     const newsletterContent = await generateNewsletterContent({
       companyName: companyData.company_name,
-      industry: formData.get('industry') as string,
-      targetAudience: formData.get('target_audience') as string,
-      audienceDescription: formData.get('audience_description') as string || '',
+      industry: companyData.industry,
+      targetAudience: newsletterMetadata.target_audience,
+      audienceDescription: newsletterMetadata.audience_description,
+      objectives: newsletterMetadata.newsletter_objectives,
+      primaryCta: newsletterMetadata.primary_cta,
     });
 
     // Insert newsletter data

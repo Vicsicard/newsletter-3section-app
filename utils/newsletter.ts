@@ -20,7 +20,9 @@ interface NewsletterParams {
   companyName: string;
   industry: string;
   targetAudience: string;
-  audienceDescription: string;  // Changed from companyDescription to match DB field
+  audienceDescription: string;
+  objectives: string;
+  primaryCta: string;
 }
 
 async function generateImage(prompt: string): Promise<string> {
