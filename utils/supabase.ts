@@ -21,7 +21,7 @@ if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
 // Initialize Supabase client with service role key for admin operations
 console.log('Initializing Supabase Admin client...');
 export const supabaseAdmin = createClient(
-  process.env.SUPABASE_URL || '',
+  process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '',
   process.env.SUPABASE_SERVICE_ROLE_KEY || '',
   {
     auth: {
@@ -34,12 +34,12 @@ export const supabaseAdmin = createClient(
 // Initialize Supabase client with anon key for public operations
 console.log('Initializing Supabase Public client...');
 export const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
+  process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || '',
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || '',
   {
     auth: {
-      autoRefreshToken: false,
-      persistSession: false,
+      autoRefreshToken: true,
+      persistSession: true,
     },
   }
 );
