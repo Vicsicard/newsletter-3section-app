@@ -29,26 +29,35 @@ export async function POST(req: NextRequest) {
     // Get newsletter and company data
     const { data: newsletter, error: newsletterError } = await supabaseAdmin
       .from('newsletters')
-      .select('*, companies(*)')
+      .select(`
+        *,
+        companies (
+          company_name,
+          industry,
+          target_audience,
+          audience_description,
+          contact_email
+        )
+      `)
       .eq('id', newsletterId)
       .single();
 
     if (newsletterError) throw new DatabaseError(`Failed to fetch newsletter: ${newsletterError.message}`);
     if (!newsletter) throw new Error('Newsletter not found');
+    if (!newsletter.companies) throw new Error('Company data not found');
 
     const company = newsletter.companies;
-    const industryInfo = newsletter.industry_info;
 
     // Generate industry summary
     const industrySummary = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo",
+      model: "gpt-4",
       messages: [{
         role: "system",
         content: "You are a professional newsletter writer specializing in business content."
       }, {
         role: "user",
-        content: `Write a brief summary about the ${industryInfo.industry} industry, focusing on trends and opportunities 
-        relevant to ${industryInfo.target_audience}. Context: ${industryInfo.audience_description}`
+        content: `Write a brief summary about the ${company.industry} industry, focusing on trends and opportunities 
+        relevant to ${company.target_audience || 'general audience'}. Context: ${company.audience_description || 'Business professionals'}`
       }]
     });
 
@@ -63,13 +72,13 @@ export async function POST(req: NextRequest) {
 
     for (const prompt of sectionPrompts) {
       const completion = await openai.chat.completions.create({
-        model: "gpt-3.5-turbo",
+        model: "gpt-4",
         messages: [{
           role: "system",
           content: "You are a professional newsletter writer specializing in business content."
         }, {
           role: "user",
-          content: `${prompt} for ${company.company_name}, a ${industryInfo.industry} company targeting ${industryInfo.target_audience}. 
+          content: `${prompt} for ${company.company_name}, a ${company.industry} company targeting ${company.target_audience || 'general audience'}. 
           Make it engaging and actionable. Include a title for this section.`
         }]
       });
@@ -85,7 +94,7 @@ export async function POST(req: NextRequest) {
           content: "You are an expert at creating prompts for DALL-E 3 to generate professional business images. Create prompts that are specific, detailed, and result in high-quality, photorealistic business imagery. Focus on professional settings, modern aesthetics, and business-appropriate scenes."
         }, {
           role: "user",
-          content: `Create a DALL-E 3 prompt for a professional image that represents: "${title}" for a ${industryInfo.industry} company targeting ${industryInfo.target_audience}.
+          content: `Create a DALL-E 3 prompt for a professional image that represents: "${title}" for a ${company.industry} company targeting ${company.target_audience || 'general audience'}.
           The image should be photorealistic, modern, and business-appropriate.
           Make it specific and detailed but keep it under 200 characters.`
         }]

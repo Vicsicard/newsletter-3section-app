@@ -1,11 +1,12 @@
 // Company Types
 export interface Company {
   id: string;
-  name: string;
-  website_url?: string;
+  company_name: string;
+  industry: string;
+  target_audience?: string;
+  audience_description?: string;
   contact_email: string;
-  status: 'active' | 'inactive';
-  created_at: string;
+  created_at?: string;
   updated_at?: string;
 }
 
@@ -36,11 +37,7 @@ export interface Newsletter {
   last_sent_status?: string;
   newsletter_objectives?: string;
   primary_cta?: string;
-  companies: {
-    company_name: string;
-    industry: string;
-    contact_email: string;
-  };
+  companies: Company;
   newsletter_contacts: NewsletterContact[];
 }
 
