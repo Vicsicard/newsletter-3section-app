@@ -1,6 +1,6 @@
 import { FormErrors } from '@/types/form';
 
-export function validateForm(formData: FormData): FormErrors {
+export const validateForm = (formData: FormData): FormErrors => {
   const errors: FormErrors = {};
 
   // Company Name validation
@@ -13,20 +13,46 @@ export function validateForm(formData: FormData): FormErrors {
   const websiteUrl = formData.get('website_url') as string;
   if (!websiteUrl || websiteUrl.trim().length === 0) {
     errors.website_url = 'Website URL is required';
-  } else {
-    try {
-      new URL(websiteUrl);
-    } catch (e) {
-      errors.website_url = 'Please enter a valid URL';
-    }
+  } else if (!/^https?:\/\/.*/.test(websiteUrl)) {
+    errors.website_url = 'Please enter a valid URL starting with http:// or https://';
+  }
+
+  // Target Audience validation
+  const targetAudience = formData.get('target_audience') as string;
+  if (!targetAudience || targetAudience.trim().length === 0) {
+    errors.target_audience = 'Target audience is required';
   }
 
   // Email validation
-  const email = formData.get('contact_email') as string;
+  const email = formData.get('email') as string;
   if (!email || email.trim().length === 0) {
-    errors.contact_email = 'Email is required';
+    errors.email = 'Email is required';
   } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    errors.contact_email = 'Please enter a valid email address';
+    errors.email = 'Please enter a valid email address';
+  }
+
+  // Audience Description validation
+  const audienceDescription = formData.get('audience_description') as string;
+  if (!audienceDescription || audienceDescription.trim().length === 0) {
+    errors.audience_description = 'Audience description is required';
+  }
+
+  // Newsletter Objectives validation
+  const objectives = formData.get('newsletter_objectives') as string;
+  if (!objectives || objectives.trim().length === 0) {
+    errors.newsletter_objectives = 'Newsletter objectives are required';
+  }
+
+  // Primary CTA validation
+  const primaryCta = formData.get('primary_cta') as string;
+  if (!primaryCta || primaryCta.trim().length === 0) {
+    errors.primary_cta = 'Primary CTA is required';
+  }
+
+  // Industry validation
+  const industry = formData.get('industry') as string;
+  if (!industry || industry.trim().length === 0) {
+    errors.industry = 'Please select an industry';
   }
 
   // Phone number validation
@@ -35,36 +61,6 @@ export function validateForm(formData: FormData): FormErrors {
     errors.phone_number = 'Phone number is required';
   } else if (!/^\+?[\d\s-()]+$/.test(phoneNumber)) {
     errors.phone_number = 'Please enter a valid phone number';
-  }
-
-  // Industry validation
-  const industry = formData.get('industry') as string;
-  if (!industry || industry.trim().length === 0) {
-    errors.industry = 'Industry is required';
-  }
-
-  // Target audience validation
-  const targetAudience = formData.get('target_audience') as string;
-  if (!targetAudience || targetAudience.trim().length === 0) {
-    errors.target_audience = 'Target audience is required';
-  }
-
-  // Audience description validation
-  const audienceDescription = formData.get('audience_description') as string;
-  if (!audienceDescription || audienceDescription.trim().length === 0) {
-    errors.audience_description = 'Audience description is required';
-  }
-
-  // Newsletter objectives validation
-  const newsletterObjectives = formData.get('newsletter_objectives') as string;
-  if (!newsletterObjectives || newsletterObjectives.trim().length === 0) {
-    errors.newsletter_objectives = 'Newsletter objectives are required';
-  }
-
-  // Primary CTA validation
-  const primaryCta = formData.get('primary_cta') as string;
-  if (!primaryCta || primaryCta.trim().length === 0) {
-    errors.primary_cta = 'Primary call to action is required';
   }
 
   // Contact list validation (optional)
@@ -78,4 +74,4 @@ export function validateForm(formData: FormData): FormErrors {
   }
 
   return errors;
-}
+};

@@ -8,6 +8,7 @@ export interface FormErrors {
   industry?: string;
   email?: string;
   contact_list?: string;
+  phone_number?: string;
 }
 
 export interface FormData {
@@ -20,6 +21,7 @@ export interface FormData {
   industry: string;
   email: string;
   contact_list: File | null;
+  phone_number?: string;
 }
 
 export interface Company {
