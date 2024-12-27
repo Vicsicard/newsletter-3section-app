@@ -6,14 +6,12 @@ validateEnvVars();
 
 // Log Supabase configuration (without sensitive data)
 console.log('Supabase Configuration:', {
-  url: process.env.SUPABASE_URL ? 'Set' : 'Not Set',
-  serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY ? 'Set' : 'Not Set',
-  anonKey: process.env.SUPABASE_ANON_KEY ? 'Set' : 'Not Set',
   nextPublicUrl: process.env.NEXT_PUBLIC_SUPABASE_URL ? 'Set' : 'Not Set',
-  nextPublicAnonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? 'Set' : 'Not Set'
+  nextPublicAnonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? 'Set' : 'Not Set',
+  serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY ? 'Set' : 'Not Set'
 });
 
-if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
   console.error('Missing required Supabase environment variables');
   console.error('Available environment variables:', Object.keys(process.env));
 }
@@ -21,7 +19,7 @@ if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
 // Initialize Supabase client with service role key for admin operations
 console.log('Initializing Supabase Admin client...');
 export const supabaseAdmin = createClient(
-  process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
   process.env.SUPABASE_SERVICE_ROLE_KEY || '',
   {
     auth: {
@@ -48,7 +46,7 @@ export const supabase = createClient(
 export const testSupabaseConnection = async () => {
   console.log('Testing Supabase connection...');
   
-  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
     console.error('Missing required Supabase environment variables');
     return false;
   }
