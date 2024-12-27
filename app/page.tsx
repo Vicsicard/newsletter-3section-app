@@ -430,11 +430,7 @@ export default function Home() {
                       </svg>
                       Company Information
                     </h2>
-                    
-                    {/* Add Industry Selector here */}
-                    {renderIndustrySelector()}
-
-                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                    <div className="grid grid-cols-2 gap-6">
                       <div className="col-span-2 md:col-span-1">
                         <label 
                           htmlFor="company_name" 
