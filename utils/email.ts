@@ -2,15 +2,15 @@ import { TransactionalEmailsApi, SendSmtpEmail, TransactionalEmailsApiApiKeys } 
 
 // Initialize API instance with API key
 const BREVO_API_KEY = process.env.BREVO_API_KEY;
-const BREVO_SENDER_EMAIL = process.env.BREVO_SENDER_EMAIL;
-const BREVO_SENDER_NAME = process.env.BREVO_SENDER_NAME;
+const BREVO_SENDER_EMAIL = process.env.BREVO_SENDER_EMAIL || 'noreply@newsletter-generator.com';
+const BREVO_SENDER_NAME = process.env.BREVO_SENDER_NAME || 'Newsletter Generator';
 
 if (!BREVO_API_KEY) {
   throw new Error('Missing BREVO_API_KEY environment variable');
 }
 
-if (!BREVO_SENDER_EMAIL) {
-  throw new Error('Missing BREVO_SENDER_EMAIL environment variable');
+if (!process.env.BREVO_SENDER_EMAIL) {
+  console.warn('Warning: BREVO_SENDER_EMAIL not set, using default value');
 }
 
 const apiInstance = new TransactionalEmailsApi();
@@ -63,7 +63,7 @@ export async function sendEmail(to: string, subject: string, htmlContent: string
   sendSmtpEmail.subject = subject;
   sendSmtpEmail.htmlContent = htmlContent;
   sendSmtpEmail.sender = {
-    name: BREVO_SENDER_NAME || 'Newsletter Generator',
+    name: BREVO_SENDER_NAME,
     email: BREVO_SENDER_EMAIL,
   };
   sendSmtpEmail.to = [{ 
@@ -74,7 +74,7 @@ export async function sendEmail(to: string, subject: string, htmlContent: string
   // Set reply-to as same as sender
   sendSmtpEmail.replyTo = {
     email: BREVO_SENDER_EMAIL,
-    name: BREVO_SENDER_NAME || 'Newsletter Generator'
+    name: BREVO_SENDER_NAME
   };
 
   // Add custom headers for tracking
