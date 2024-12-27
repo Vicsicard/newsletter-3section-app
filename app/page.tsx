@@ -270,8 +270,8 @@ export default function Home() {
         <div 
           className="flex-1 flex flex-col items-center justify-center w-full px-4 relative"
           role="progressbar"
-          aria-valuemin="0"
-          aria-valuemax="100"
+          aria-valuemin={0}
+          aria-valuemax={100}
           aria-valuenow={formProgress}
           aria-labelledby="progress-title"
           aria-describedby="progress-description"
