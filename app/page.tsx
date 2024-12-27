@@ -36,24 +36,31 @@ export default function Home() {
     }
 
     try {
+      console.log('Submitting form data...');
       const response = await fetch('/api/onboarding', {
         method: 'POST',
         body: formData,
       });
 
+      console.log('Response status:', response.status);
       const data = await response.json();
+      console.log('Response data:', data);
       
-      if (response.ok && data.success) {
+      if (!response.ok) {
+        throw new Error(data.message || `Server error: ${response.status}`);
+      }
+
+      if (data.success) {
         setIsSuccess(true);
         setSuccess(data.message || 'Successfully processed your request');
         if (data.company?.id) {
           console.log('Company created:', data.company);
         }
       } else {
-        throw new Error(data.message || `Server error: ${response.status}`);
+        throw new Error(data.message || 'Unknown error occurred');
       }
     } catch (error) {
-      console.error('Error:', error);
+      console.error('Detailed error:', error);
       setError(error instanceof Error ? error.message : 'Failed to process request');
       setIsSuccess(false);
     } finally {

@@ -127,12 +127,23 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(response);
   } catch (error) {
-    console.error('Error in onboarding process:', error);
+    console.error('Detailed error in onboarding process:', {
+      error,
+      type: error instanceof Error ? error.constructor.name : typeof error,
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined
+    });
+
     const apiError = error instanceof ApiError ? error : new DatabaseError('Internal server error');
+    
     return NextResponse.json(
       {
         success: false,
-        message: apiError.message
+        message: apiError.message,
+        error: {
+          type: apiError.name,
+          details: error instanceof Error ? error.message : String(error)
+        }
       },
       { status: apiError.statusCode || 500 }
     );
