@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/utils/supabase';
 import { parseCSV } from '@/utils/csv';
-import { generateNewsletterContent } from '@/utils/newsletter';
 import type { OnboardingResponse, Company } from '@/types';
 import { ApiError, DatabaseError } from '@/utils/errors';
 import { NextRequest } from 'next/server';
@@ -118,9 +117,11 @@ export async function POST(req: NextRequest) {
       section3_content: ''   // Will be filled by AI later
     };
 
-    const { error: newsletterError } = await supabaseAdmin
+    const { data: newsletter, error: newsletterError } = await supabaseAdmin
       .from('newsletters')
-      .insert([newsletterData]);
+      .insert([newsletterData])
+      .select()
+      .single();
 
     if (newsletterError) {
       console.error('Newsletter creation error:', newsletterError);
@@ -135,6 +136,7 @@ export async function POST(req: NextRequest) {
       message: 'Company and newsletter created successfully',
       data: {
         company_id: company.id,
+        newsletter_id: newsletter.id,
         total_contacts: totalContacts,
         failed_contacts: 0,
         status: 'success'

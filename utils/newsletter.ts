@@ -1,91 +1,55 @@
-import OpenAI from 'openai';
+import { supabaseAdmin } from './supabase-admin';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
-interface NewsletterSection {
+export interface NewsletterSection {
   title: string;
   content: string;
-  image_url?: string;
+  imagePrompt: string;
+  imageUrl?: string;
 }
 
-interface NewsletterContent {
-  title: string;
-  sections: NewsletterSection[];
+export interface NewsletterContent {
   industry_summary: string;
+  sections: NewsletterSection[];
 }
 
-interface NewsletterParams {
-  companyName: string;
-  industry: string;
-  targetAudience: string;
-  audienceDescription: string;
-  objectives: string;
-  primaryCta: string;
-}
-
-async function generateImage(prompt: string): Promise<string> {
-  const image = await openai.images.generate({
-    prompt,
-    size: "1024x1024",
-    n: 1
+export async function generateNewsletter(newsletterId: string): Promise<NewsletterContent> {
+  const response = await fetch('/api/newsletter/generate', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ newsletterId }),
   });
 
-  if (!image.data[0]?.url) {
-    throw new Error('Failed to generate image');
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Failed to generate newsletter');
   }
 
-  return image.data[0].url;
+  const data = await response.json();
+  return data.data;
 }
 
-async function generateIndustrySummary(industry: string): Promise<string> {
-  const industrySummaryPrompt = `Write a brief, engaging summary of the ${industry} industry, focusing on current trends, challenges, and opportunities. Keep it concise and informative.`;
-  const industrySummaryResponse = await openai.chat.completions.create({
-    model: "gpt-4",
-    messages: [{ role: "user", content: industrySummaryPrompt }]
-  });
-  const industrySummary = industrySummaryResponse.choices[0]?.message?.content || '';
-
-  return industrySummary;
-}
-
-export async function generateNewsletterContent(params: NewsletterParams): Promise<NewsletterContent> {
-  const { companyName, industry, targetAudience, audienceDescription } = params;
-
-  // Generate industry summary
-  const industrySummary = await generateIndustrySummary(industry);
-
-  // Generate sections
-  const sections = [];
-  const sectionTypes = ['Success Story', 'Industry Best Practices', 'Innovation Spotlight'];
-
-  for (const type of sectionTypes) {
-    const sectionPrompt = `Write a compelling ${type} section for a newsletter targeting ${targetAudience} in the ${industry} industry. The company ${companyName} wants to engage ${audienceDescription}. Keep it informative and engaging.`;
-    const response = await openai.chat.completions.create({
-      model: "gpt-4",
-      messages: [{ role: "user", content: sectionPrompt }]
-    });
-    const content = response.choices[0]?.message?.content || '';
-
-    // Generate a unique image for this section
-    const imagePrompt = `Create a professional, business-appropriate image for a ${type} section in a ${industry} industry newsletter. ${
-      type === 'Success Story' ? 'Show success and achievement.' :
-      type === 'Industry Best Practices' ? 'Illustrate professional best practices and excellence.' :
-      'Showcase innovation and forward-thinking concepts.'
-    }`;
-    const imageUrl = await generateImage(imagePrompt);
-
-    sections.push({
-      title: type,
-      content,
-      image_url: imageUrl
-    });
+export async function getNewsletterById(id: string) {
+  const response = await fetch(`/api/newsletter/${id}`);
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Failed to fetch newsletter');
   }
+  const data = await response.json();
+  return data.data;
+}
 
-  return {
-    title: `${companyName} Industry Insights`,
-    industry_summary: industrySummary,
-    sections
-  };
+export function parseNewsletterSection(sectionJson: string): NewsletterSection {
+  try {
+    return JSON.parse(sectionJson);
+  } catch (error) {
+    console.error('Failed to parse newsletter section:', error);
+    return {
+      title: 'Error',
+      content: 'Failed to load section content',
+      imagePrompt: '',
+      imageUrl: ''
+    };
+  }
 }

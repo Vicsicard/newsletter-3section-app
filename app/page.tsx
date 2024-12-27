@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, FormEvent } from 'react';
+import { useRouter } from 'next/navigation';
 import { validateForm } from '@/utils/validation';
 import LoadingModal from '@/components/LoadingModal';
 import SuccessModal from '@/components/SuccessModal';
@@ -8,6 +9,7 @@ import ErrorModal from '@/components/ErrorModal';
 import { FormErrors } from '@/types/form';
 
 export default function Home() {
+  const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -63,8 +65,17 @@ export default function Home() {
       if (data.success) {
         setIsSuccess(true);
         setSuccess(data.message || 'Successfully processed your request');
-        if (data.company?.id) {
-          console.log('Company created:', data.company);
+        if (data.data?.company_id) {
+          // Get the latest newsletter for this company
+          const newsletterResponse = await fetch(`/api/company/${data.data.company_id}/latest-newsletter`);
+          const newsletterData = await newsletterResponse.json();
+          
+          if (newsletterData.success && newsletterData.data?.id) {
+            // Redirect to the newsletter page
+            router.push(`/newsletter/${newsletterData.data.id}`);
+          } else {
+            throw new Error('Failed to get newsletter ID');
+          }
         }
       } else {
         throw new Error(data.message || 'Unknown error occurred');

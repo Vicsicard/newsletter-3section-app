@@ -1,127 +1,67 @@
-# Newsletter Generator App
+# AI-Powered Newsletter Generator
 
-## Overview
-A modern, full-stack newsletter generation and subscription management application built with Next.js, Supabase, and Brevo. The app uses GPT-3.5-turbo for content generation and DALL-E 3 for image generation, providing a seamless workflow for creating and managing newsletters.
-
-## Process Flow
-1. **Company Onboarding**
-   - Collect company information
-   - Import contact list via CSV
-   - Store data in Supabase
-
-2. **Industry Analysis**
-   - Generate comprehensive industry summary using GPT-3.5
-   - Analyze current trends and challenges
-   - Store analysis for content generation
-
-3. **Newsletter Generation**
-   - Create three distinct sections:
-     1. Industry Insights
-     2. Best Practices
-     3. Success Stories
-   - Generate section-specific images using DALL-E 3
-   - Store complete newsletter in Supabase
-
-4. **Newsletter Management**
-   - Preview generated content
-   - Edit and customize sections
-   - Approve or regenerate content
-
-5. **Email Distribution**
-   - Set up email campaigns via Brevo
-   - Schedule newsletter delivery
-   - Track engagement metrics
-
-## Tech Stack
-- Frontend: Next.js 14
-- Backend: Supabase
-- Email Service: Brevo (Sendinblue)
-- AI: OpenAI GPT-3.5-turbo & DALL-E 3
-- Deployment: Vercel
+A powerful newsletter generation system built with Next.js, OpenAI, and Supabase. Generate professional newsletters with AI-powered content and images.
 
 ## Features
-- [x] Dynamic newsletter generation with AI
-- [x] CSV contact import functionality
-- [x] Company profile management
-- [x] Multi-step onboarding process
-- [x] Error-resilient form handling
-- [x] Industry analysis generation
-- [x] Three-section newsletter structure
-- [x] AI-powered image generation
-- [ ] Newsletter preview and editing interface
-- [ ] Email campaign management
-- [ ] Analytics tracking
 
-## Environment Setup
+- 🤖 AI-powered content generation using GPT-3.5-turbo
+- 🎨 Professional images using DALL-E 3
+- 📊 Industry-specific insights and trends
+- 📧 Direct email delivery via Brevo
+- 📁 Contact list management
+- 🔒 Secure API handling
+
+## Tech Stack
+
+- **Frontend**: Next.js 14, React, Tailwind CSS
+- **Backend**: Next.js API Routes
+- **Database**: Supabase
+- **AI**: OpenAI (GPT-3.5-turbo, DALL-E 3)
+- **Email**: Brevo API
+
+## Setup
+
 1. Clone the repository
-   ```bash
-   git clone [repository-url]
-   cd newsletter-3section-app
-   ```
-2. Install dependencies
+2. Install dependencies:
    ```bash
    npm install
    ```
-3. Set up environment variables:
-   Create a `.env.local` file with the following variables:
-   ```
+3. Set up environment variables in `.env.local`:
+   ```env
+   OPENAI_API_KEY=your_openai_key
    SUPABASE_URL=your_supabase_url
-   SUPABASE_ANON_KEY=your_anon_key
-   SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
-   OPENAI_API_KEY=your_openai_api_key
+   SUPABASE_SERVICE_ROLE_KEY=your_supabase_key
    BREVO_API_KEY=your_brevo_key
-   BREVO_SENDER_EMAIL=your_brevo_sender_email
-   BREVO_SENDER_NAME=your_brevo_sender_name
-   BASE_URL=http://localhost:3000
+   BREVO_SENDER_EMAIL=your_sender_email
+   BREVO_SENDER_NAME=your_sender_name
    ```
-
-## Database Setup
-1. Create required tables in Supabase:
-   - companies
-   - contacts
-   - newsletters
-   - newsletter_sections
-   - compiled_newsletters
-
-2. Run the schema migrations:
+4. Run the development server:
    ```bash
-   cd supabase
-   psql -h your_db_host -d your_db_name -U your_db_user -f complete_schema.sql
+   npm run dev
    ```
 
-## Running the Project
-- Development: `npm run dev`
-- Build: `npm run build`
-- Start: `npm start`
+## Usage
 
-## ⚠️ Important Development Guidelines
+1. Fill out the onboarding form with your company details
+2. Upload your contact list (CSV format)
+3. Click "Generate Newsletter" to create AI-powered content
+4. Review and send your newsletter
 
-> **WARNING**: This application follows a carefully planned architecture and workflow. Before making any changes:
-> 1. Review the Process Flow section in this README
-> 2. Check the detailed implementation phases in PROJECT_STATUS.md
-> 3. Ensure changes align with the existing architecture
-> 4. DO NOT delete or modify core files without consulting these documents
-> 5. Any changes to the database schema must follow the established patterns
+## API Endpoints
 
-The success of this application relies on maintaining consistency with this documented approach. Each component has been designed to work together in a specific way.
+- `/api/onboarding`: Handle company registration and contact import
+- `/api/newsletter/generate`: Generate newsletter content with AI
+- `/api/newsletter/send`: Send newsletter via Brevo
+- `/api/newsletter/[id]`: Retrieve newsletter by ID
 
-## Documentation
-- [Project Status](PROJECT_STATUS.md) - Current status and implementation phases
-- [Architecture](ARCHITECTURE.md) - Detailed technical documentation and best practices
-- [API Documentation](API.md) - API endpoints and usage
+## Security
 
-## Current Status
-- Company creation and management
-- Contact CSV import
-- AI-powered newsletter generation
-- Database schema and API endpoints
-- Newsletter editing interface (In Progress)
-- Email sending functionality (Pending)
-
-## Deployment
-Deployed on Vercel with automatic GitHub integration.
+- All sensitive operations are handled server-side
+- API keys are securely stored in environment variables
+- Database access is protected with Row Level Security
 
 ## Contributing
+
 1. Fork the repository
 2. Create your feature branch
 3. Commit your changes
@@ -129,4 +69,5 @@ Deployed on Vercel with automatic GitHub integration.
 5. Create a Pull Request
 
 ## License
-This project is licensed under the MIT License - see the LICENSE file for details.
+
+This project is licensed under the MIT License.
