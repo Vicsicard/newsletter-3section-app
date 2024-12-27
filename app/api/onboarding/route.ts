@@ -104,6 +104,7 @@ export async function POST(req: NextRequest) {
         company_id: company.id,
         total_contacts: contacts.length,
         failed_contacts: 0,
+        status: 'success'
       }
     };
 
