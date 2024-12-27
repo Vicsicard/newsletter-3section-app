@@ -19,11 +19,12 @@ export async function parseCSV(input: string | Buffer): Promise<Contact[]> {
         }
 
         contacts.push({
-          email: record.email,
-          name: record.name || '',
-          company_id: '', // This will be set by the API
+          email: record.email.trim().toLowerCase(),
+          first_name: record.first_name || '',
+          last_name: record.last_name || '',
+          is_active: true,
           created_at: new Date().toISOString(),
-          id: '', // This will be set by Supabase
+          updated_at: new Date().toISOString()
         });
       }
     });

@@ -59,6 +59,11 @@ export async function POST(req: NextRequest) {
       const fileContent = await contactListFile.text();
       const contacts = await parseCSV(fileContent);
       
+      if (!company?.id) {
+        console.error('Company ID is missing');
+        throw new DatabaseError('Failed to process contacts: Company ID is missing');
+      }
+
       // Add company_id to each contact
       const contactsWithCompanyId = contacts.map(contact => ({
         ...contact,
@@ -68,6 +73,8 @@ export async function POST(req: NextRequest) {
       // Insert contacts in batches
       if (contactsWithCompanyId.length > 0) {
         console.log(`Inserting ${contactsWithCompanyId.length} contacts...`);
+        console.log('First contact:', contactsWithCompanyId[0]); // Debug log
+        
         const { error: contactsError } = await supabaseAdmin
           .from('contacts')
           .insert(contactsWithCompanyId);

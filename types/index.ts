@@ -11,11 +11,13 @@ export interface Company {
 
 // Contact Types
 export interface Contact {
-  id: string;
-  company_id: string;
+  id?: string;
+  company_id?: string;
   email: string;
-  name: string;
-  created_at: string;
+  first_name?: string;
+  last_name?: string;
+  is_active?: boolean;
+  created_at?: string;
   updated_at?: string;
 }
 
