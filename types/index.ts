@@ -22,6 +22,7 @@ export interface Contact {
 export interface Newsletter {
   id: string;
   company_id: string;
+  title: string;
   status: string;
   industry_summary: string;
   section1_content: string;

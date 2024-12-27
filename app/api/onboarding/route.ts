@@ -59,11 +59,16 @@ export async function POST(req: NextRequest) {
       .from('newsletters')
       .insert([{
         company_id: company.id,
+        title: `${companyData.company_name}'s Industry Newsletter`,
         status: 'draft',
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
         newsletter_objectives: newsletterMetadata.newsletter_objectives,
-        primary_cta: newsletterMetadata.primary_cta
+        primary_cta: newsletterMetadata.primary_cta,
+        industry_summary: '',  // Will be filled by AI later
+        section1_content: '',  // Will be filled by AI later
+        section2_content: '',  // Will be filled by AI later
+        section3_content: ''   // Will be filled by AI later
       }])
       .select()
       .single();
