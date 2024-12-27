@@ -113,8 +113,13 @@ export default function Home() {
   // Calculate form progress
   useEffect(() => {
     const calculateProgress = () => {
-      const fields = Object.values(formData);
-      const filledFields = fields.filter(field => field.length > 0 || field !== null).length;
+      const fields = Object.entries(formData);
+      const filledFields = fields.filter(([key, value]) => {
+        if (key === 'contact_list') {
+          return value !== null;
+        }
+        return typeof value === 'string' && value.length > 0;
+      }).length;
       return Math.round((filledFields / fields.length) * 100);
     };
     setFormProgress(calculateProgress());
@@ -532,6 +537,21 @@ export default function Home() {
                         )}
                       </div>
                     </div>
+                  </div>
+
+                  {/* Industry Selection Section */}
+                  <div className="bg-[#4B83FB]/10 rounded-xl p-6 mb-8">
+                    <h2 className="text-xl font-semibold text-[#2563EB] mb-4 flex items-center">
+                      <svg className="w-6 h-6 mr-2 text-[#2563EB]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                      </svg>
+                      Industry Selection
+                    </h2>
+                    <p className="text-sm text-gray-600 mb-6">
+                      Select your industry to load a template with general examples. Remember to customize each field with your company's specific details, values, and unique offerings.
+                      These templates are starting points - make them your own!
+                    </p>
+                    {renderIndustrySelector()}
                   </div>
 
                   {/* Target Audience Section */}

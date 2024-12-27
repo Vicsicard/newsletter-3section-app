@@ -1,3 +1,5 @@
+import { FormData } from '@/types/form';
+
 interface IndustryTemplate {
   industry: string;
   icon: string;
@@ -7,46 +9,47 @@ interface IndustryTemplate {
   primaryCTA: string;
 }
 
-export const industryTemplates: { [key: string]: IndustryTemplate } = {
+// Note: These templates provide general examples. Users should customize them with their specific company details.
+const industryTemplates: { [key: string]: Partial<FormData> & IndustryTemplate } = {
   technology: {
     industry: "Technology & Software",
     icon: "💻",
-    targetAudience: "Tech-savvy professionals, IT decision-makers, developers",
-    audienceDescription: "Tech professionals seeking innovative solutions to streamline their operations. They value efficiency, scalability, and staying ahead of technology trends. Pain points include legacy system integration, security concerns, and keeping pace with rapid technological changes.",
-    newsletterObjectives: "Share industry insights, highlight product updates, provide technical tips and best practices, showcase customer success stories in the tech space.",
-    primaryCTA: "Schedule a Demo",
+    targetAudience: 'Tech-savvy professionals, IT decision-makers, and business leaders',
+    audienceDescription: 'Our target audience consists of professionals who value innovative solutions. They are typically aged 25-55, working in technology-related roles or making technology decisions for their organizations. [Customize with your specific target demographics and behaviors]',
+    newsletterObjectives: 'Share industry insights, product updates, and tech trends. Establish thought leadership in the tech space. [Add your specific company goals and unique value propositions]',
+    primaryCTA: 'Explore our latest solutions or schedule a demo. [Customize with your specific product/service offering]'
   },
   healthcare: {
     industry: "Healthcare & Medical",
     icon: "🏥",
-    targetAudience: "Healthcare professionals, medical practitioners, hospital administrators",
-    audienceDescription: "Healthcare professionals focused on improving patient care and operational efficiency. They prioritize patient outcomes, regulatory compliance, and evidence-based solutions. Key challenges include managing patient data, maintaining compliance, and optimizing healthcare delivery.",
-    newsletterObjectives: "Share medical research updates, discuss healthcare innovations, provide compliance guidance, and highlight success stories in patient care improvement.",
-    primaryCTA: "Book a Consultation",
-  },
-  retail: {
-    industry: "Retail & E-commerce",
-    icon: "🛍️",
-    targetAudience: "Retail business owners, e-commerce managers, retail chain operators",
-    audienceDescription: "Retail professionals looking to enhance customer experience and increase sales. They focus on inventory management, customer engagement, and competitive pricing. Challenges include inventory optimization, omnichannel presence, and customer retention.",
-    newsletterObjectives: "Share retail trends, provide marketing strategies, discuss customer engagement tactics, and showcase successful retail transformations.",
-    primaryCTA: "Start Free Trial",
-  },
-  finance: {
-    industry: "Finance & Banking",
-    icon: "💰",
-    targetAudience: "Financial advisors, banking professionals, investment managers",
-    audienceDescription: "Finance professionals seeking to optimize operations and enhance client services. They prioritize security, compliance, and client satisfaction. Main concerns include risk management, regulatory compliance, and digital transformation.",
-    newsletterObjectives: "Share financial market insights, discuss regulatory updates, provide investment strategies, and highlight fintech innovations.",
-    primaryCTA: "Request Portfolio Review",
+    targetAudience: 'Healthcare professionals, medical administrators, and wellness enthusiasts',
+    audienceDescription: 'Our audience includes medical practitioners, healthcare administrators, and individuals interested in health and wellness. They value evidence-based information and professional development. [Add your specific target audience characteristics]',
+    newsletterObjectives: 'Provide updates on medical innovations, industry best practices, and healthcare insights. [Customize with your organization\'s specific goals and expertise]',
+    primaryCTA: 'Book a consultation or learn more about our services. [Modify based on your specific healthcare offerings]'
   },
   education: {
     industry: "Education & E-learning",
     icon: "📚",
-    targetAudience: "Educators, school administrators, e-learning professionals",
-    audienceDescription: "Education professionals focused on improving learning outcomes and student engagement. They value innovative teaching methods and educational technology. Challenges include student engagement, remote learning effectiveness, and resource management.",
-    newsletterObjectives: "Share educational best practices, discuss learning technologies, provide teaching strategies, and showcase successful educational programs.",
-    primaryCTA: "Try Demo Class",
+    targetAudience: 'Educators, school administrators, and education technology professionals',
+    audienceDescription: 'We serve education professionals seeking innovative teaching methods and administrative solutions. This includes K-12 teachers, university faculty, and EdTech decision-makers. [Specify your target education segment and their needs]',
+    newsletterObjectives: 'Share educational resources, industry updates, and teaching strategies. [Add your institution\'s specific objectives and unique educational approach]',
+    primaryCTA: 'Discover our educational resources or sign up for a workshop. [Customize based on your specific educational offerings]'
+  },
+  retail: {
+    industry: "Retail & E-commerce",
+    icon: "🛍️",
+    targetAudience: 'Retail business owners, store managers, and retail industry professionals',
+    audienceDescription: 'Our audience includes retail decision-makers looking to optimize their operations and stay competitive. They are interested in retail trends, technology, and customer experience. [Add your specific retail segment focus]',
+    newsletterObjectives: 'Provide retail industry insights, trend analysis, and business strategies. [Include your company\'s specific retail expertise and value proposition]',
+    primaryCTA: 'Explore our retail solutions or request a consultation. [Modify based on your specific retail products/services]'
+  },
+  finance: {
+    industry: "Finance & Banking",
+    icon: "💰",
+    targetAudience: 'Financial professionals, investors, and business decision-makers',
+    audienceDescription: 'We target finance industry professionals seeking market insights and financial solutions. This includes investment managers, financial advisors, and corporate finance leaders. [Customize with your specific financial sector focus]',
+    newsletterObjectives: 'Deliver financial market analysis, industry trends, and expert insights. [Add your organization\'s specific financial expertise and goals]',
+    primaryCTA: 'Schedule a financial consultation or learn about our services. [Modify based on your specific financial offerings]'
   },
   marketing: {
     industry: "Marketing & Advertising",
@@ -65,3 +68,5 @@ export const getIndustryNames = () => {
     icon: industryTemplates[key].icon
   }));
 };
+
+export { industryTemplates };
