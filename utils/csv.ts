@@ -18,10 +18,20 @@ export async function parseCSV(input: string | Buffer): Promise<Contact[]> {
           continue; // Skip invalid records
         }
 
+        // Split name into first_name and last_name if only name is provided
+        let firstName = record.first_name || '';
+        let lastName = record.last_name || '';
+        
+        if (!firstName && !lastName && record.name) {
+          const nameParts = record.name.split(' ');
+          firstName = nameParts[0] || '';
+          lastName = nameParts.slice(1).join(' ') || '';
+        }
+
         contacts.push({
           email: record.email.trim().toLowerCase(),
-          first_name: record.first_name || '',
-          last_name: record.last_name || '',
+          first_name: firstName,
+          last_name: lastName,
           is_active: true,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
