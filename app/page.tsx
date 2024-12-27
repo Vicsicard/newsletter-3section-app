@@ -25,7 +25,8 @@ export default function Home() {
     audience_description: '',
     newsletter_objectives: '',
     primary_cta: '',
-    industry: ''
+    industry: '',
+    email: ''
   });
   const [currentSection, setCurrentSection] = useState(1);
   const [formProgress, setFormProgress] = useState(0);
@@ -686,7 +687,7 @@ export default function Home() {
         <LoadingModal 
           ref={modalRef}
           isOpen={isLoading}
-          email={formData.email}
+          email={formData.email || 'your email'}
           isSuccess={false}
           onClose={() => setIsLoading(false)}
           error={null}
@@ -706,7 +707,7 @@ export default function Home() {
         <SuccessModal 
           ref={modalRef}
           message={success}
-          email={formData.email}
+          email={formData.email || 'your email'}
           onClose={() => {
             setSuccess(null);
             firstInputRef.current?.focus();
