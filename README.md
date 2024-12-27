@@ -1,73 +1,80 @@
 # AI-Powered Newsletter Generator
 
-A powerful newsletter generation system built with Next.js, OpenAI, and Supabase. Generate professional newsletters with AI-powered content and images.
+A Next.js application that automatically generates professional newsletters with AI-generated content and images.
 
 ## Features
 
-- 🤖 AI-powered content generation using GPT-3.5-turbo
-- 🎨 Professional images using DALL-E 3
-- 📊 Industry-specific insights and trends
-- 📧 Direct email delivery via Brevo
-- 📁 Contact list management
-- 🔒 Secure API handling
+- 🤖 AI-powered content generation using GPT-4
+- 🎨 Automatic image generation with DALL-E
+- 📝 Multi-step form for company information
+- 📊 Industry-specific content generation
+- 📧 Contact list management
+- 🎯 Customized newsletter sections
+- ⚡ Real-time preview
+- 🔄 Async content generation
+- 🎨 Responsive design
 
 ## Tech Stack
 
-- **Frontend**: Next.js 14, React, Tailwind CSS
-- **Backend**: Next.js API Routes
+- **Framework**: Next.js 14
+- **UI**: Tailwind CSS, HeadlessUI
 - **Database**: Supabase
-- **AI**: OpenAI (GPT-3.5-turbo, DALL-E 3)
-- **Email**: Brevo API
+- **AI**: OpenAI (GPT-4, DALL-E)
+- **Email**: Brevo
+- **Styling**: Tailwind CSS
+- **Form Handling**: React Hook Form
+- **Loading States**: react-spinners
+- **Success Animation**: react-confetti
 
-## Setup
+## Getting Started
 
 1. Clone the repository
 2. Install dependencies:
    ```bash
    npm install
    ```
+
 3. Set up environment variables in `.env.local`:
-   ```env
-   OPENAI_API_KEY=your_openai_key
-   SUPABASE_URL=your_supabase_url
-   SUPABASE_SERVICE_ROLE_KEY=your_supabase_key
-   BREVO_API_KEY=your_brevo_key
-   BREVO_SENDER_EMAIL=your_sender_email
-   BREVO_SENDER_NAME=your_sender_name
    ```
+   OPENAI_API_KEY=your_key
+   SUPABASE_URL=your_url
+   SUPABASE_SERVICE_ROLE_KEY=your_key
+   SUPABASE_ANON_KEY=your_key
+   BREVO_API_KEY=your_key
+   BREVO_SENDER_EMAIL=your_email
+   BREVO_SENDER_NAME=your_name
+   BASE_URL=http://localhost:3000
+   ```
+
 4. Run the development server:
    ```bash
    npm run dev
    ```
 
+5. Open [http://localhost:3000](http://localhost:3000)
+
 ## Usage
 
-1. Fill out the onboarding form with your company details
-2. Upload your contact list (CSV format)
-3. Click "Generate Newsletter" to create AI-powered content
-4. Review and send your newsletter
+1. Fill out the company information form
+2. Upload or enter contact list
+3. Click "Generate Content" to create newsletter
+4. Preview the generated newsletter with AI content and images
+5. Send the newsletter to your contact list
 
-## API Endpoints
+## Current Status
 
-- `/api/onboarding`: Handle company registration and contact import
-- `/api/newsletter/generate`: Generate newsletter content with AI
-- `/api/newsletter/send`: Send newsletter via Brevo
-- `/api/newsletter/[id]`: Retrieve newsletter by ID
-
-## Security
-
-- All sensitive operations are handled server-side
-- API keys are securely stored in environment variables
-- Database access is protected with Row Level Security
-
-## Contributing
-
-1. Fork the repository
-2. Create your feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a Pull Request
+- ✅ Form submission
+- ✅ Newsletter content generation
+- ✅ Image generation with DALL-E
+- ✅ Newsletter preview with images
+- ✅ Error handling
+- ✅ Loading states
+- ✅ Success notifications
 
 ## License
 
-This project is licensed under the MIT License.
+MIT License - feel free to use this project for your own purposes.
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.

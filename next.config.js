@@ -1,7 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  swcMinify: true,
   generateBuildId: async () => {
     return `build-${Date.now()}`;
   },
@@ -28,7 +27,7 @@ const nextConfig = {
     ];
   },
   experimental: {
-    serverComponentsExternalPackages: ['@supabase/supabase-js']
+    serverActions: true,
   },
   env: {
     NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -44,6 +43,14 @@ const nextConfig = {
   },
   images: {
     domains: ['oaidalleapiprodscus.blob.core.windows.net', 'replicate.delivery'],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'oaidalleapiprodscus.blob.core.windows.net',
+        port: '',
+        pathname: '/private/**',
+      },
+    ],
   },
 };
 

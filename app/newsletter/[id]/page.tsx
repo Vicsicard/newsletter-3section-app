@@ -75,12 +75,14 @@ export default function NewsletterPage({ params }: NewsletterPageProps) {
     <div key={index} className="mb-8 p-6 bg-white rounded-lg shadow-md">
       <h2 className="text-2xl font-bold mb-4">{section.title}</h2>
       {section.imageUrl && (
-        <div className="relative w-full h-64 mb-4">
+        <div style={{ position: 'relative', width: '100%', height: '400px', marginBottom: '1rem' }}>
           <Image
             src={section.imageUrl}
             alt={section.title}
             fill
-            className="object-cover rounded-lg"
+            style={{ objectFit: 'cover' }}
+            className="rounded-lg"
+            priority
           />
         </div>
       )}
