@@ -21,8 +21,10 @@ export async function POST(req: NextRequest) {
           industry,
           contact_email
         ),
-        contacts (
-          email
+        newsletter_contacts (
+          contacts (
+            email
+          )
         )
       `)
       .eq('id', newsletterId)
@@ -57,7 +59,8 @@ export async function POST(req: NextRequest) {
     );
 
     // Send to all contacts
-    const emailPromises = newsletter.contacts.map(async (contact: { email: string }) => {
+    const contacts = newsletter.newsletter_contacts.map(nc => nc.contacts).filter(Boolean);
+    const emailPromises = contacts.map(async (contact: { email: string }) => {
       return sendEmail(
         contact.email,
         `${newsletter.companies.company_name} - Industry Newsletter`,

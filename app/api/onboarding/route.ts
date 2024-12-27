@@ -54,6 +54,25 @@ export async function POST(req: NextRequest) {
 
     console.log('Company inserted successfully:', company);
 
+    // Create a new newsletter entry
+    const { data: newsletter, error: newsletterError } = await supabaseAdmin
+      .from('newsletters')
+      .insert([{
+        company_id: company.id,
+        status: 'draft',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        newsletter_objectives: newsletterMetadata.newsletter_objectives,
+        primary_cta: newsletterMetadata.primary_cta
+      }])
+      .select()
+      .single();
+
+    if (newsletterError) {
+      console.error('Newsletter creation error:', newsletterError);
+      throw new DatabaseError(`Failed to create newsletter: ${newsletterError.message}`);
+    }
+
     // Process contact list if provided
     const contactListFile = formData.get('contact_list') as File;
     let totalContacts = 0;
@@ -62,10 +81,10 @@ export async function POST(req: NextRequest) {
       try {
         console.log('Processing contact list file...');
         const fileContent = await contactListFile.text();
-        console.log('CSV content:', fileContent); // Debug log
+        console.log('CSV content:', fileContent);
         
         const contacts = await parseCSV(fileContent);
-        console.log('Parsed contacts:', contacts); // Debug log
+        console.log('Parsed contacts:', contacts);
 
         if (!company?.id) {
           console.error('Company ID is missing');
@@ -78,20 +97,39 @@ export async function POST(req: NextRequest) {
           company_id: company.id,
         }));
 
-        // Insert contacts in batches
+        // Insert contacts in batches and collect their IDs
         if (contactsWithCompanyId.length > 0) {
           console.log(`Inserting ${contactsWithCompanyId.length} contacts...`);
-          console.log('First contact:', contactsWithCompanyId[0]); // Debug log
           
-          const { error: contactsError } = await supabaseAdmin
+          const { data: insertedContacts, error: contactsError } = await supabaseAdmin
             .from('contacts')
-            .insert(contactsWithCompanyId);
+            .insert(contactsWithCompanyId)
+            .select('id');
 
           if (contactsError) {
             console.error('Contacts insertion error:', contactsError);
             throw new DatabaseError(`Failed to insert contacts: ${contactsError.message}`);
           }
-          console.log('Contacts inserted successfully');
+
+          // Create newsletter_contacts entries
+          if (insertedContacts && insertedContacts.length > 0) {
+            const newsletterContacts = insertedContacts.map(contact => ({
+              newsletter_id: newsletter.id,
+              contact_id: contact.id,
+              created_at: new Date().toISOString()
+            }));
+
+            const { error: newsletterContactsError } = await supabaseAdmin
+              .from('newsletter_contacts')
+              .insert(newsletterContacts);
+
+            if (newsletterContactsError) {
+              console.error('Newsletter contacts insertion error:', newsletterContactsError);
+              throw new DatabaseError(`Failed to link contacts to newsletter: ${newsletterContactsError.message}`);
+            }
+          }
+
+          console.log('Contacts and newsletter_contacts inserted successfully');
           totalContacts = contactsWithCompanyId.length;
         }
       } catch (error) {
@@ -100,50 +138,16 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Create initial newsletter
-    console.log('Creating initial newsletter...');
-    const newsletterData = {
-      company_id: company.id,
-      title: `${companyData.company_name}'s Newsletter`,
-      content: '',
-      industry_info: {
-        industry: companyData.industry,
-        target_audience: companyData.target_audience,
-        audience_description: companyData.audience_description
-      },
-      industry_summary: '',  // Will be filled by AI later
-      section1_content: '',  // Will be filled by AI later
-      section2_content: '',  // Will be filled by AI later
-      section3_content: ''   // Will be filled by AI later
-    };
-
-    const { data: newsletter, error: newsletterError } = await supabaseAdmin
-      .from('newsletters')
-      .insert([newsletterData])
-      .select()
-      .single();
-
-    if (newsletterError) {
-      console.error('Newsletter creation error:', newsletterError);
-      throw new DatabaseError(`Failed to insert newsletter data: ${newsletterError.message}`);
-    }
-
-    console.log('Newsletter created successfully');
-
-    // Set success response
-    const response: OnboardingResponse = {
+    // Return success response with company and newsletter IDs
+    return NextResponse.json({
       success: true,
-      message: 'Company and newsletter created successfully',
+      message: 'Onboarding completed successfully',
       data: {
         company_id: company.id,
         newsletter_id: newsletter.id,
-        total_contacts: totalContacts,
-        failed_contacts: 0,
-        status: 'success'
+        total_contacts: totalContacts
       }
-    };
-
-    return NextResponse.json(response);
+    });
   } catch (error) {
     console.error('Detailed error in onboarding process:', {
       error,
