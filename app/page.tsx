@@ -26,7 +26,8 @@ export default function Home() {
     newsletter_objectives: '',
     primary_cta: '',
     industry: '',
-    email: ''
+    email: '',
+    contact_list: null as File | null
   });
   const [currentSection, setCurrentSection] = useState(1);
   const [formProgress, setFormProgress] = useState(0);
@@ -113,7 +114,7 @@ export default function Home() {
   useEffect(() => {
     const calculateProgress = () => {
       const fields = Object.values(formData);
-      const filledFields = fields.filter(field => field.length > 0).length;
+      const filledFields = fields.filter(field => field.length > 0 || field !== null).length;
       return Math.round((filledFields / fields.length) * 100);
     };
     setFormProgress(calculateProgress());
@@ -126,6 +127,75 @@ export default function Home() {
       ...prev,
       [name]: value
     }));
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      if (file.type !== 'text/csv' && !file.name.endsWith('.csv')) {
+        setFormErrors(prev => ({
+          ...prev,
+          contact_list: 'Please upload a CSV file'
+        }));
+        return;
+      }
+      if (file.size > 10 * 1024 * 1024) { // 10MB
+        setFormErrors(prev => ({
+          ...prev,
+          contact_list: 'File size must be less than 10MB'
+        }));
+        return;
+      }
+      setFormData(prev => ({
+        ...prev,
+        contact_list: file
+      }));
+      setFormErrors(prev => ({
+        ...prev,
+        contact_list: undefined
+      }));
+    }
+  };
+
+  const handleDragOver = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.currentTarget.classList.add('border-[#2563EB]', 'bg-blue-50');
+  };
+
+  const handleDragLeave = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.currentTarget.classList.remove('border-[#2563EB]', 'bg-blue-50');
+  };
+
+  const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.currentTarget.classList.remove('border-[#2563EB]', 'bg-blue-50');
+    
+    const file = event.dataTransfer.files?.[0];
+    if (file) {
+      if (file.type !== 'text/csv' && !file.name.endsWith('.csv')) {
+        setFormErrors(prev => ({
+          ...prev,
+          contact_list: 'Please upload a CSV file'
+        }));
+        return;
+      }
+      if (file.size > 10 * 1024 * 1024) {
+        setFormErrors(prev => ({
+          ...prev,
+          contact_list: 'File size must be less than 10MB'
+        }));
+        return;
+      }
+      setFormData(prev => ({
+        ...prev,
+        contact_list: file
+      }));
+      setFormErrors(prev => ({
+        ...prev,
+        contact_list: undefined
+      }));
+    }
   };
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
@@ -620,7 +690,12 @@ export default function Home() {
                     </h2>
                     <div className="mt-1">
                       <label htmlFor="contact_list" className="block text-sm font-medium text-gray-700">Upload Contact List (CSV)</label>
-                      <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg hover:border-[#2563EB] transition-colors duration-200">
+                      <div 
+                        className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg hover:border-[#2563EB] transition-colors duration-200"
+                        onDragOver={handleDragOver}
+                        onDragLeave={handleDragLeave}
+                        onDrop={handleDrop}
+                      >
                         <div className="space-y-1 text-center">
                           <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
                             <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -633,23 +708,31 @@ export default function Home() {
                                 name="contact_list"
                                 id="contact_list"
                                 accept=".csv"
+                                onChange={handleFileChange}
                                 className="sr-only"
+                                aria-label="Upload contact list CSV file"
+                                aria-describedby="contact-list-help"
                               />
                             </label>
                             <p className="pl-1">or drag and drop</p>
                           </div>
-                          <p className="text-xs text-gray-500">CSV file up to 10MB</p>
+                          <p className="text-xs text-gray-500" id="contact-list-help">CSV file up to 10MB</p>
+                          {formData.contact_list && (
+                            <p className="text-sm text-green-600 mt-2">
+                              Selected file: {formData.contact_list.name}
+                            </p>
+                          )}
+                          {formErrors.contact_list && (
+                            <p 
+                              className="mt-2 text-sm text-red-600"
+                              id="contact-list-error"
+                              role="alert"
+                            >
+                              {formErrors.contact_list}
+                            </p>
+                          )}
                         </div>
                       </div>
-                      {formErrors.contact_list && (
-                        <p 
-                          className="mt-2 text-sm text-red-600"
-                          id="contact-list-error"
-                          role="alert"
-                        >
-                          {formErrors.contact_list}
-                        </p>
-                      )}
                     </div>
                   </div>
 
