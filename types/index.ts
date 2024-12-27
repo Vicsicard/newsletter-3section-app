@@ -15,6 +15,7 @@ export interface Contact {
   id: string;
   email: string;
   company_id: string;
+  status: 'active' | 'unsubscribed';
   created_at?: string;
   updated_at?: string;
 }

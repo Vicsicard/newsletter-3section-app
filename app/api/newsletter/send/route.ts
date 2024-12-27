@@ -3,7 +3,7 @@ import { supabaseAdmin } from '@/utils/supabase-admin';
 import { sendEmail, EmailResponse } from '@/utils/email';
 import { generateEmailHTML, generatePlainText } from '@/utils/email-template';
 import { parseNewsletterSection } from '@/utils/newsletter';
-import type { Newsletter, NewsletterContact } from '@/types';
+import type { Newsletter, NewsletterContact, Contact } from '@/types';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -75,7 +75,12 @@ export async function POST(req: NextRequest) {
     // Filter out contacts and ensure they are active
     const contacts = newsletter.newsletter_contacts
       .map((nc: NewsletterContact) => nc.contacts)
-      .filter((contact) => contact && contact.status !== 'unsubscribed');
+      .filter((contact): contact is Contact => {
+        if (!contact) return false;
+        if (!contact.email) return false;
+        if (contact.status === 'unsubscribed') return false;
+        return true;
+      });
 
     console.log('Found contacts:', contacts.length);
     
