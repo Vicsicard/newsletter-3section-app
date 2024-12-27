@@ -52,6 +52,8 @@ export async function POST(req: NextRequest) {
 
     // Process contact list if provided
     const contactListFile = formData.get('contact_list') as File;
+    let totalContacts = 0;
+
     if (contactListFile && contactListFile.size > 0) {
       console.log('Processing contact list file...');
       const fileContent = await contactListFile.text();
@@ -75,6 +77,7 @@ export async function POST(req: NextRequest) {
           throw new DatabaseError(`Failed to insert contacts: ${contactsError.message}`);
         }
         console.log('Contacts inserted successfully');
+        totalContacts = contactsWithCompanyId.length;
       }
     }
 
@@ -116,7 +119,7 @@ export async function POST(req: NextRequest) {
       message: 'Company and newsletter created successfully',
       data: {
         company_id: company.id,
-        total_contacts: contactsWithCompanyId ? contactsWithCompanyId.length : 0,
+        total_contacts: totalContacts,
         failed_contacts: 0,
         status: 'success'
       }
