@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { validateEnvVars } from './errorHandler';
+import { validateEnvVars } from './errors';
 
 // Validate environment variables but don't throw errors
 validateEnvVars();
@@ -49,36 +49,25 @@ export const testSupabaseConnection = async () => {
   console.log('Testing Supabase connection...');
   
   if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    console.error('Supabase credentials not available:', {
-      url: process.env.SUPABASE_URL ? 'Set' : 'Not Set',
-      serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY ? 'Set' : 'Not Set'
-    });
+    console.error('Missing required Supabase environment variables');
     return false;
   }
 
   try {
-    console.log('Attempting to query Supabase...');
-    console.log('Using URL:', process.env.SUPABASE_URL);
-    
     const { data, error } = await supabaseAdmin
       .from('companies')
-      .select('id')
-      .limit(1);
-    
+      .select('count')
+      .limit(0);
+
     if (error) {
-      console.error('Supabase Connection Error:', {
-        message: error.message,
-        details: error.details,
-        hint: error.hint,
-        code: error.code
-      });
+      console.error('Supabase connection test error:', error);
       return false;
     }
-    
-    console.log('Supabase connection successful, found', data?.length || 0, 'companies');
+
+    console.log('Supabase connection test successful');
     return true;
   } catch (error) {
-    console.error('Supabase Connection Exception:', error);
+    console.error('Supabase connection test error:', error);
     return false;
   }
 };
