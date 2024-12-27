@@ -2,8 +2,8 @@ import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/utils/supabase';
 import { parseCSV } from '@/utils/csv';
 import { generateNewsletterContent } from '@/utils/newsletter';
-import type { OnboardingResponse, Company } from '@/types/form';
-import { ApiError, DatabaseError, ValidationError } from '@/utils/errors';
+import type { OnboardingResponse, Company } from '@/types';
+import { ApiError, DatabaseError } from '@/utils/errors';
 import { NextRequest } from 'next/server';
 
 // New way to configure API routes in App Router
@@ -11,56 +11,18 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
-  // Initialize response object
-  let responseData = {
-    success: false,
-    message: '',
-    company: null as any
-  };
-
   try {
-    // Test Supabase connection first
-    console.log('Testing Supabase connection...');
-    const isConnected = await testSupabaseConnection();
-    if (!isConnected) {
-      throw new Error('Failed to connect to Supabase');
-    }
-
-    // Check if companies table exists
-    console.log('Checking companies table...');
-    const { data: tableInfo, error: tableError } = await supabaseAdmin
-      .from('companies')
-      .select('*')
-      .limit(0);
-
-    if (tableError) {
-      console.error('Table check error:', {
-        error: tableError,
-        message: tableError.message,
-        details: tableError.details,
-        hint: tableError.hint
-      });
-      throw new Error(`Failed to access companies table: ${tableError.message}`);
-    }
-
-    console.log('Companies table accessible');
-
     // Get form data
     const formData = await req.formData();
     
     // Extract company data from FormData
     const companyData = {
-      company_name: formData.get('company_name') as string,
+      name: formData.get('company_name') as string,
       website_url: formData.get('website_url') as string,
       contact_email: formData.get('contact_email') as string,
-      phone_number: formData.get('phone_number') as string,
-      industry: formData.get('industry') as string,
-      target_audience: formData.get('target_audience') as string,
-      audience_description: formData.get('audience_description') as string,
-      newsletter_objectives: formData.get('newsletter_objectives') as string,
-      primary_cta: formData.get('primary_cta') as string,
-      contacts_count: 0,
+      status: 'active' as const,
       created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     };
 
     // Insert company data
@@ -73,7 +35,7 @@ export async function POST(req: NextRequest) {
 
     if (insertError) {
       console.error('Company insertion error:', insertError);
-      throw new Error(`Failed to insert company data: ${insertError.message}`);
+      throw new DatabaseError(`Failed to insert company data: ${insertError.message}`);
     }
 
     console.log('Company data inserted successfully');
@@ -84,16 +46,33 @@ export async function POST(req: NextRequest) {
     if (contactListFile) {
       const fileContent = await contactListFile.text();
       contacts = await parseCSV(fileContent);
-      console.log(`Parsed ${contacts.length} contacts from CSV`);
+      
+      // Add company_id to each contact
+      contacts = contacts.map(contact => ({
+        ...contact,
+        company_id: company.id,
+      }));
+
+      // Insert contacts in batches
+      if (contacts.length > 0) {
+        const { error: contactsError } = await supabaseAdmin
+          .from('contacts')
+          .insert(contacts);
+
+        if (contactsError) {
+          console.error('Contacts insertion error:', contactsError);
+          throw new DatabaseError(`Failed to insert contacts: ${contactsError.message}`);
+        }
+      }
     }
 
     // Generate newsletter content
     console.log('Generating newsletter content...');
     const newsletterContent = await generateNewsletterContent({
-      companyName: companyData.company_name,
-      industry: companyData.industry,
-      targetAudience: companyData.target_audience,
-      audienceDescription: companyData.audience_description || '',
+      companyName: companyData.name,
+      industry: formData.get('industry') as string,
+      targetAudience: formData.get('target_audience') as string,
+      audienceDescription: formData.get('audience_description') as string || '',
     });
 
     // Insert newsletter data
@@ -107,23 +86,28 @@ export async function POST(req: NextRequest) {
         industry_summary: newsletterContent.industry_summary,
         sections: newsletterContent.sections,
         created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       }]);
 
     if (newsletterError) {
       console.error('Newsletter insertion error:', newsletterError);
-      throw new Error(`Failed to insert newsletter data: ${newsletterError.message}`);
+      throw new DatabaseError(`Failed to insert newsletter data: ${newsletterError.message}`);
     }
 
     console.log('Newsletter data inserted successfully');
 
     // Set success response
-    responseData = {
+    const response: OnboardingResponse = {
       success: true,
       message: 'Company and newsletter created successfully',
-      company: company
+      data: {
+        company_id: company.id,
+        total_contacts: contacts.length,
+        failed_contacts: 0,
+      }
     };
 
-    return NextResponse.json(responseData);
+    return NextResponse.json(response);
   } catch (error) {
     console.error('Error in onboarding process:', error);
     const apiError = error instanceof ApiError ? error : new DatabaseError('Internal server error');
@@ -134,15 +118,5 @@ export async function POST(req: NextRequest) {
       },
       { status: apiError.statusCode || 500 }
     );
-  }
-}
-
-async function testSupabaseConnection() {
-  try {
-    const { data, error } = await supabaseAdmin.from('companies').select('count').limit(0);
-    return !error;
-  } catch (error) {
-    console.error('Supabase connection test error:', error);
-    return false;
   }
 }
