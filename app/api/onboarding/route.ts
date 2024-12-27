@@ -9,12 +9,17 @@ import { NextRequest } from 'next/server';
 // New way to configure API routes in App Router
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+export const maxDuration = 300; // Set max duration to 5 minutes
 
 export async function POST(req: NextRequest) {
   try {
     // Get form data
     const formData = await req.formData();
     
+    // Log the start of processing
+    console.log('Starting onboarding process...');
+    console.log('Form data received:', Object.fromEntries(formData.entries()));
+
     // Extract company data from FormData - including the new fields
     const companyData = {
       company_name: formData.get('company_name') as string,
@@ -36,7 +41,7 @@ export async function POST(req: NextRequest) {
     };
 
     // Insert company data
-    console.log('Inserting company data...');
+    console.log('Inserting company data:', companyData);
     const { data: company, error: insertError } = await supabaseAdmin
       .from('companies')
       .insert([companyData])
@@ -48,7 +53,7 @@ export async function POST(req: NextRequest) {
       throw new DatabaseError(`Failed to insert company data: ${insertError.message}`);
     }
 
-    console.log('Company data inserted successfully');
+    console.log('Company inserted successfully:', company);
 
     // Process contact list if provided
     const contactListFile = formData.get('contact_list') as File;
@@ -57,8 +62,11 @@ export async function POST(req: NextRequest) {
     if (contactListFile && contactListFile.size > 0) {
       console.log('Processing contact list file...');
       const fileContent = await contactListFile.text();
-      const contacts = await parseCSV(fileContent);
+      console.log('CSV content:', fileContent); // Debug log
       
+      const contacts = await parseCSV(fileContent);
+      console.log('Parsed contacts:', contacts); // Debug log
+
       if (!company?.id) {
         console.error('Company ID is missing');
         throw new DatabaseError('Failed to process contacts: Company ID is missing');

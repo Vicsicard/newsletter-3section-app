@@ -40,16 +40,26 @@ export default function Home() {
       const response = await fetch('/api/onboarding', {
         method: 'POST',
         body: formData,
+        signal: AbortSignal.timeout(5 * 60 * 1000)
       });
 
-      console.log('Response status:', response.status);
+      if (!response.ok) {
+        if (response.status === 504) {
+          throw new Error('Request timed out. Please try again.');
+        }
+        const errorText = await response.text();
+        console.error('Error response:', errorText);
+        try {
+          const errorData = JSON.parse(errorText);
+          throw new Error(errorData.message || `Server error: ${response.status}`);
+        } catch (e) {
+          throw new Error(`Server error: ${response.status}`);
+        }
+      }
+
       const data = await response.json();
       console.log('Response data:', data);
       
-      if (!response.ok) {
-        throw new Error(data.message || `Server error: ${response.status}`);
-      }
-
       if (data.success) {
         setIsSuccess(true);
         setSuccess(data.message || 'Successfully processed your request');
