@@ -2,7 +2,6 @@ import type { NewsletterSection } from './newsletter';
 
 export function generateEmailHTML(
   companyName: string,
-  industrySummary: string,
   sections: NewsletterSection[]
 ) {
   return `
@@ -28,54 +27,56 @@ export function generateEmailHTML(
         }
         .header {
           text-align: center;
-          padding: 20px;
-          background-color: #f8f9fa;
+          padding: 20px 0;
+          border-bottom: 2px solid #eee;
         }
         .section {
-          margin-bottom: 30px;
+          margin: 30px 0;
           padding: 20px;
-          border: 1px solid #e9ecef;
           border-radius: 5px;
+          background-color: #ffffff;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
         .section-title {
           color: #333;
           font-size: 24px;
           margin-bottom: 15px;
+          font-weight: bold;
         }
         .section-content {
           color: #555;
           font-size: 16px;
+          margin-bottom: 15px;
         }
         .section-image {
           width: 100%;
-          max-width: 550px;
+          max-width: 500px;
           height: auto;
           margin: 15px 0;
           border-radius: 5px;
         }
-        .summary {
-          padding: 20px;
-          background-color: #f8f9fa;
-          border-radius: 5px;
-          margin-bottom: 30px;
+        .bullet-points {
+          margin: 15px 0;
+          padding-left: 20px;
         }
-        .footer {
-          text-align: center;
-          padding: 20px;
+        .bullet-points li {
+          margin-bottom: 8px;
+          color: #555;
+        }
+        .takeaway {
           background-color: #f8f9fa;
-          color: #666;
-          font-size: 14px;
+          padding: 15px;
+          margin-top: 15px;
+          border-left: 4px solid #007bff;
+          font-style: italic;
         }
         @media only screen and (max-width: 600px) {
           .container {
             width: 100%;
             padding: 10px;
           }
-          .section-title {
-            font-size: 20px;
-          }
-          .section-content {
-            font-size: 14px;
+          .section {
+            padding: 15px;
           }
         }
       </style>
@@ -83,61 +84,57 @@ export function generateEmailHTML(
     <body>
       <div class="container">
         <div class="header">
-          <h1>${companyName}</h1>
+          <h1>${companyName} Newsletter</h1>
         </div>
-
-        <div class="summary">
-          <h2>Industry Insights</h2>
-          ${industrySummary.split('\n').map(p => `<p>${p}</p>`).join('')}
-        </div>
-
-        ${sections.map((section, index) => `
-          <div class="section">
-            <h2 class="section-title">${section.title}</h2>
-            ${section.imageUrl ? `
-              <img 
-                src="${section.imageUrl}" 
-                alt="${section.title}" 
-                class="section-image"
-              />
-            ` : ''}
-            <div class="section-content">
-              ${section.content.split('\n').map(p => `<p>${p}</p>`).join('')}
+        ${sections.map((section, index) => {
+          const content = section.content.split('\n').map(line => line.trim()).filter(Boolean);
+          const sectionTypes = ['Pain Point Analysis', 'Common Mistakes', 'Company Solutions'];
+          
+          return `
+            <div class="section">
+              <h2 class="section-title">${section.title}</h2>
+              ${section.imageUrl ? `<img src="${section.imageUrl}" alt="${section.title}" class="section-image">` : ''}
+              <div class="section-content">
+                ${content.map(paragraph => {
+                  if (paragraph.startsWith('-')) {
+                    // Handle bullet points
+                    const bullets = content.filter(line => line.startsWith('-'));
+                    return `
+                      <ul class="bullet-points">
+                        ${bullets.map(bullet => `<li>${bullet.substring(1).trim()}</li>`).join('')}
+                      </ul>
+                    `;
+                  } else if (paragraph.toLowerCase().includes('takeaway')) {
+                    // Handle takeaway section
+                    return `<div class="takeaway">${paragraph}</div>`;
+                  } else {
+                    // Regular paragraph
+                    return `<p>${paragraph}</p>`;
+                  }
+                }).join('')}
+              </div>
             </div>
-          </div>
-        `).join('')}
-
-        <div class="footer">
-          <p>© ${new Date().getFullYear()} ${companyName}. All rights reserved.</p>
-          <p>You received this email because you subscribed to our newsletter.</p>
-        </div>
+          `;
+        }).join('')}
       </div>
     </body>
     </html>
   `;
 }
 
-// Function to create a plain text version for email clients that don't support HTML
 export function generatePlainText(
   companyName: string,
-  industrySummary: string,
   sections: NewsletterSection[]
-) {
+): string {
   return `
 ${companyName} Newsletter
 
-Industry Insights
-----------------
-${industrySummary}
-
-${sections.map(section => `
+${sections.map((section, index) => {
+  return `
 ${section.title}
-${'-'.repeat(section.title.length)}
 ${section.content}
 
-`).join('\n')}
-
-© ${new Date().getFullYear()} ${companyName}. All rights reserved.
-You received this email because you subscribed to our newsletter.
-  `.trim();
+`;
+}).join('\n')}
+`;
 }

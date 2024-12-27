@@ -99,19 +99,19 @@ export default function NewsletterPage({ params }: NewsletterPageProps) {
       <div className="max-w-4xl mx-auto px-4">
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold">Newsletter Preview</h1>
-          <div className="flex gap-4">
+          <div className="space-x-4">
             <button
               onClick={handleGenerate}
               disabled={isLoading}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+              className="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isLoading ? 'Generating...' : 'Generate Content'}
+              {isLoading ? 'Generating...' : 'Generate'}
             </button>
             {newsletter && (
               <button
                 onClick={handleSend}
                 disabled={isSending}
-                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
+                className="bg-green-500 text-white px-6 py-2 rounded-lg hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isSending ? 'Sending...' : 'Send Newsletter'}
               </button>
@@ -135,13 +135,9 @@ export default function NewsletterPage({ params }: NewsletterPageProps) {
 
         {newsletter && (
           <div>
-            <div className="mb-8 p-6 bg-white rounded-lg shadow-md">
-              <h2 className="text-2xl font-bold mb-4">Industry Summary</h2>
-              <div className="prose max-w-none">
-                {newsletter.industry_summary.split('\n').map((paragraph: string, i: number) => (
-                  <p key={i} className="mb-4">{paragraph}</p>
-                ))}
-              </div>
+            <div className="mb-8 p-6 bg-white rounded-lg shadow-md text-center">
+              <h1 className="text-4xl font-bold mb-2">{newsletter.company_name}</h1>
+              <p className="text-gray-600">Your Industry Newsletter</p>
             </div>
 
             {newsletter.sections.map((section: NewsletterSection, index: number) => 
@@ -152,9 +148,13 @@ export default function NewsletterPage({ params }: NewsletterPageProps) {
 
         {!newsletter && !isLoading && (
           <div className="text-center py-12">
-            <p className="text-gray-600">
-              Click &quot;Generate Content&quot; to create your newsletter
-            </p>
+            <p className="text-gray-600">Click Generate to create your newsletter</p>
+          </div>
+        )}
+
+        {isLoading && (
+          <div className="text-center py-12">
+            <p className="text-gray-600">Generating your newsletter...</p>
           </div>
         )}
       </div>

@@ -27,7 +27,7 @@ const nextConfig = {
     ];
   },
   experimental: {
-    serverActions: true,
+    instrumentationHook: true,
   },
   env: {
     NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -46,9 +46,7 @@ const nextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 'oaidalleapiprodscus.blob.core.windows.net',
-        port: '',
-        pathname: '/private/**',
+        hostname: '**',
       },
     ],
   },

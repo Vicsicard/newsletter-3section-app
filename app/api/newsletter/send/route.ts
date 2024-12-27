@@ -60,13 +60,11 @@ export async function POST(req: NextRequest) {
     // Generate HTML and plain text versions
     const htmlContent = generateEmailHTML(
       newsletter.companies.company_name,
-      newsletter.industry_summary,
       sections
     );
 
     const textContent = generatePlainText(
       newsletter.companies.company_name,
-      newsletter.industry_summary,
       sections
     );
 
