@@ -101,37 +101,33 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Generate newsletter content
-    console.log('Generating newsletter content...');
-    const newsletterContent = await generateNewsletterContent({
-      companyName: companyData.company_name,
-      industry: companyData.industry,
-      targetAudience: companyData.target_audience,
-      audienceDescription: companyData.audience_description,
-      objectives: newsletterMetadata.newsletter_objectives,
-      primaryCta: newsletterMetadata.primary_cta,
-    });
+    // Create initial newsletter
+    console.log('Creating initial newsletter...');
+    const newsletterData = {
+      company_id: company.id,
+      title: `${companyData.company_name}'s Newsletter`,
+      content: '',
+      industry_info: {
+        industry: companyData.industry,
+        target_audience: companyData.target_audience,
+        audience_description: companyData.audience_description
+      },
+      industry_summary: '',  // Will be filled by AI later
+      section1_content: '',  // Will be filled by AI later
+      section2_content: '',  // Will be filled by AI later
+      section3_content: ''   // Will be filled by AI later
+    };
 
-    // Insert newsletter data
-    console.log('Inserting newsletter data...');
     const { error: newsletterError } = await supabaseAdmin
       .from('newsletters')
-      .insert([{
-        company_id: company.id,
-        title: newsletterContent.title,
-        status: 'draft',
-        industry_summary: newsletterContent.industry_summary,
-        sections: newsletterContent.sections,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      }]);
+      .insert([newsletterData]);
 
     if (newsletterError) {
-      console.error('Newsletter insertion error:', newsletterError);
+      console.error('Newsletter creation error:', newsletterError);
       throw new DatabaseError(`Failed to insert newsletter data: ${newsletterError.message}`);
     }
 
-    console.log('Newsletter data inserted successfully');
+    console.log('Newsletter created successfully');
 
     // Set success response
     const response: OnboardingResponse = {
