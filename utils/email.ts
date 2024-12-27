@@ -23,7 +23,7 @@ export interface EmailResponse {
   error?: {
     code: number;
     message: string;
-  };
+  } | string;
   email?: string;
 }
 

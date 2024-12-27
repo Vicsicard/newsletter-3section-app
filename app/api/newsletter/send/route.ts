@@ -113,7 +113,17 @@ export async function POST(req: NextRequest) {
     console.log('All send results:', JSON.stringify(results, null, 2));
 
     // Check if any emails failed to send
-    const failedEmails = results.filter((result: EmailResponse) => !result.success);
+    const failedEmails = results.filter((result) => {
+      if (!result.success) {
+        console.log('Failed email:', {
+          email: result.email,
+          error: result.error
+        });
+        return true;
+      }
+      return false;
+    });
+    
     console.log('Failed emails:', failedEmails.length, JSON.stringify(failedEmails, null, 2));
 
     // Update newsletter status
