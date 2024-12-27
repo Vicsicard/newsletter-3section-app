@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, forwardRef } from 'react';
 import { ClipLoader } from 'react-spinners';
 import Confetti from 'react-confetti';
 import { Dialog, Transition } from '@headlessui/react';
@@ -21,33 +21,33 @@ const loadingMessages = [
   "Adding some extra sparkle to your content..."
 ];
 
-export default function LoadingModal({ isOpen, email, isSuccess, onClose, error }: LoadingModalProps) {
+const LoadingModal = forwardRef<HTMLDivElement, LoadingModalProps>((props, ref) => {
   const [messageIndex, setMessageIndex] = useState(0);
   const [showConfetti, setShowConfetti] = useState(false);
 
   useEffect(() => {
-    if (!isOpen || isSuccess) return;
+    if (!props.isOpen || props.isSuccess) return;
 
     const interval = setInterval(() => {
       setMessageIndex((prev) => (prev + 1) % loadingMessages.length);
     }, 3000);
 
     return () => clearInterval(interval);
-  }, [isOpen, isSuccess]);
+  }, [props.isOpen, props.isSuccess]);
 
   useEffect(() => {
-    if (isSuccess) {
+    if (props.isSuccess) {
       setShowConfetti(true);
       const timer = setTimeout(() => setShowConfetti(false), 5000);
       return () => clearTimeout(timer);
     }
-  }, [isSuccess]);
+  }, [props.isSuccess]);
 
-  if (!isOpen) return null;
+  if (!props.isOpen) return null;
 
   return (
-    <Transition appear show={isOpen} as={Fragment}>
-      <Dialog as="div" className="relative z-10" onClose={onClose}>
+    <Transition appear show={props.isOpen} as={Fragment}>
+      <Dialog as="div" className="relative z-10" onClose={props.onClose}>
         <Transition.Child
           as={Fragment}
           enter="ease-out duration-300"
@@ -71,19 +71,22 @@ export default function LoadingModal({ isOpen, email, isSuccess, onClose, error 
               leaveFrom="opacity-100 scale-100"
               leaveTo="opacity-0 scale-95"
             >
-              <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
+              <Dialog.Panel 
+                ref={ref}
+                className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all"
+              >
                 <Dialog.Title
                   as="h3"
                   className="text-lg font-medium leading-6 text-gray-900"
                 >
-                  {error ? 'Error' : isSuccess ? 'Success!' : 'Processing...'}
+                  {props.error ? 'Error' : props.isSuccess ? 'Success!' : 'Processing...'}
                 </Dialog.Title>
                 <div className="mt-2">
-                  {error ? (
+                  {props.error ? (
                     <p className="text-sm text-red-600">
-                      {error}
+                      {props.error}
                     </p>
-                  ) : isSuccess ? (
+                  ) : props.isSuccess ? (
                     <div className="text-center">
                       {showConfetti && <Confetti width={window.innerWidth} height={window.innerHeight} />}
                       <div className="mb-4">
@@ -108,7 +111,7 @@ export default function LoadingModal({ isOpen, email, isSuccess, onClose, error 
                         Your draft newsletter has been sent to:
                       </p>
                       <p className="text-lg font-semibold text-indigo-600 mb-6">
-                        {email}
+                        {props.email}
                       </p>
                     </div>
                   ) : (
@@ -121,14 +124,14 @@ export default function LoadingModal({ isOpen, email, isSuccess, onClose, error 
                   )}
                 </div>
 
-                {(error || isSuccess) && (
+                {(props.error || props.isSuccess) && (
                   <div className="mt-4">
                     <button
                       type="button"
                       className="inline-flex justify-center rounded-md border border-transparent bg-blue-100 px-4 py-2 text-sm font-medium text-blue-900 hover:bg-blue-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
-                      onClick={onClose}
+                      onClick={props.onClose}
                     >
-                      {error ? 'Try Again' : 'Close'}
+                      {props.error ? 'Try Again' : 'Close'}
                     </button>
                   </div>
                 )}
@@ -139,4 +142,8 @@ export default function LoadingModal({ isOpen, email, isSuccess, onClose, error 
       </Dialog>
     </Transition>
   );
-}
+});
+
+LoadingModal.displayName = 'LoadingModal';
+
+export default LoadingModal;

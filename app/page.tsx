@@ -683,7 +683,14 @@ export default function Home() {
 
       {/* Modals with focus management */}
       {isLoading && (
-        <LoadingModal ref={modalRef} />
+        <LoadingModal 
+          ref={modalRef}
+          isOpen={isLoading}
+          email={formData.email}
+          isSuccess={false}
+          onClose={() => setIsLoading(false)}
+          error={null}
+        />
       )}
       {error && (
         <ErrorModal 
@@ -699,6 +706,7 @@ export default function Home() {
         <SuccessModal 
           ref={modalRef}
           message={success}
+          email={formData.email}
           onClose={() => {
             setSuccess(null);
             firstInputRef.current?.focus();
