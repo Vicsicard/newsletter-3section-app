@@ -6,10 +6,11 @@ const openai = new OpenAI({
 });
 
 export interface NewsletterSection {
-  title: string;
-  content: string;
-  imagePrompt: string;
-  imageUrl?: string;
+  heading: string;
+  body: string;
+  image_prompt?: string;
+  replicate_image_url: string | null;
+  section_number: number;
 }
 
 export interface NewsletterContent {
@@ -107,9 +108,11 @@ export async function generateNewsletterContent(newsletterId: string) {
       });
 
       sections.push({
-        title: prompt,
-        content: completion.choices[0].message.content || 'No content generated',
-        imagePrompt: imagePrompt.choices[0].message.content || 'No image prompt generated',
+        heading: prompt,
+        body: completion.choices[0].message.content || 'No content generated',
+        image_prompt: imagePrompt.choices[0].message.content || 'No image prompt generated',
+        replicate_image_url: null,
+        section_number: sections.length + 1
       });
     }
 
@@ -135,10 +138,10 @@ export async function generateNewsletterContent(newsletterId: string) {
         .from('newsletter_sections')
         .insert({
           newsletter_id: newsletterId,
-          section_number: i + 1,
-          heading: section.title,
-          body: section.content,
-          image_prompt: section.imagePrompt,
+          section_number: section.section_number,
+          heading: section.heading,
+          body: section.body,
+          image_prompt: section.image_prompt,
           image_status: 'pending',
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
@@ -205,16 +208,17 @@ export function parseNewsletterSection(sectionJson: string): NewsletterSection {
     // Ensure the section has both imagePrompt and imageUrl
     return {
       ...parsed,
-      imageUrl: parsed.imageUrl || parsed.replicate_image_url || '', // Try both possible image URL fields
-      imagePrompt: parsed.imagePrompt || ''
+      replicate_image_url: parsed.replicate_image_url || parsed.imageUrl || null, // Try both possible image URL fields
+      image_prompt: parsed.image_prompt || ''
     };
   } catch (error) {
     console.error('Failed to parse newsletter section:', error);
     return {
-      title: 'Error',
-      content: 'Failed to load section content',
-      imagePrompt: '',
-      imageUrl: ''
+      heading: 'Error',
+      body: 'Failed to load section content',
+      image_prompt: '',
+      replicate_image_url: null,
+      section_number: 0
     };
   }
 }
