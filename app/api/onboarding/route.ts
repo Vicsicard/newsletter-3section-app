@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/utils/supabase-admin';
+import { generateNewsletter } from '../newsletter/generate/route';
 
 export async function POST(request: Request) {
   try {
@@ -57,23 +58,14 @@ export async function POST(request: Request) {
       }, { status: 500 });
     }
 
-    // Trigger the newsletter generation
+    // Generate the newsletter directly instead of making an HTTP request
     try {
-      const generateResponse = await fetch('http://localhost:3000/api/newsletter/generate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          newsletterId: newsletter.id
-        })
-      });
-
-      if (!generateResponse.ok) {
-        console.error('Newsletter generation failed:', await generateResponse.text());
+      const generateResult = await generateNewsletter(newsletter.id);
+      if (!generateResult.success) {
+        console.error('Newsletter generation failed:', generateResult.error);
       }
     } catch (error) {
-      console.error('Failed to trigger newsletter generation:', error);
+      console.error('Failed to generate newsletter:', error);
     }
 
     return NextResponse.json({

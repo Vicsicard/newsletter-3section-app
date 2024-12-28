@@ -1,32 +1,18 @@
-import { NextRequest } from 'next/server';
-import OpenAI from 'openai';
+import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/utils/supabase-admin';
-import { DatabaseError } from '@/utils/errors';
+import OpenAI from 'openai';
 
 if (!process.env.OPENAI_API_KEY) {
   throw new Error('Missing OPENAI_API_KEY environment variable');
 }
 
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
+  apiKey: process.env.OPENAI_API_KEY,
 });
 
-export const runtime = 'nodejs';
-export const dynamic = 'force-dynamic';
-export const maxDuration = 300; // 5 minutes
-
-interface Section {
-  title: string;
-  content: string;
-  imagePrompt: string;
-  imageUrl?: string;
-}
-
-export async function POST(req: NextRequest) {
+export async function generateNewsletter(newsletterId: string) {
   try {
-    const { newsletterId } = await req.json();
-
-    // Get newsletter and company data
+    // Get newsletter with company data
     const { data: newsletter, error: newsletterError } = await supabaseAdmin
       .from('newsletters')
       .select(`
@@ -42,9 +28,15 @@ export async function POST(req: NextRequest) {
       .eq('id', newsletterId)
       .single();
 
-    if (newsletterError) throw new DatabaseError(`Failed to fetch newsletter: ${newsletterError.message}`);
-    if (!newsletter) throw new Error('Newsletter not found');
-    if (!newsletter.companies) throw new Error('Company data not found');
+    if (newsletterError) {
+      console.error('Failed to fetch newsletter:', newsletterError);
+      return { success: false, error: `Failed to fetch newsletter: ${newsletterError.message}` };
+    }
+
+    if (!newsletter || !newsletter.companies) {
+      console.error('Newsletter or company data not found');
+      return { success: false, error: 'Newsletter or company data not found' };
+    }
 
     const company = newsletter.companies;
 
@@ -68,7 +60,7 @@ export async function POST(req: NextRequest) {
       "Share success stories or case studies"
     ];
 
-    const sections: Section[] = [];
+    const sections: any[] = [];
 
     for (const prompt of sectionPrompts) {
       const completion = await openai.chat.completions.create({
@@ -143,7 +135,10 @@ export async function POST(req: NextRequest) {
       })
       .eq('id', newsletterId);
 
-    if (updateError) throw new DatabaseError(`Failed to update newsletter: ${updateError.message}`);
+    if (updateError) {
+      console.error('Failed to update newsletter:', updateError);
+      return { success: false, error: `Failed to update newsletter: ${updateError.message}` };
+    }
 
     // Trigger email sending
     try {
@@ -166,21 +161,34 @@ export async function POST(req: NextRequest) {
       console.error('Failed to trigger email sending:', error);
     }
 
-    return Response.json({
-      success: true,
-      message: 'Newsletter content generated and email triggered',
-      data: {
-        industry_summary: industrySummary.choices[0].message.content,
-        sections
-      }
-    });
+    return { success: true, data: { industry_summary: industrySummary.choices[0].message.content, sections } };
 
   } catch (error) {
-    console.error('Newsletter generation error:', error);
-    return Response.json({
+    console.error('Failed to generate newsletter:', error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Failed to generate newsletter' 
+    };
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const { newsletterId } = await request.json();
+    
+    const result = await generateNewsletter(newsletterId);
+    
+    if (!result.success) {
+      return NextResponse.json({ success: false, error: result.error }, { status: 500 });
+    }
+
+    return NextResponse.json({ success: true, data: result.data });
+
+  } catch (error) {
+    console.error('Server error:', error);
+    return NextResponse.json({
       success: false,
-      message: error instanceof Error ? error.message : 'Failed to generate newsletter content',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: error instanceof Error ? error.message : 'Server error'
     }, { status: 500 });
   }
 }
