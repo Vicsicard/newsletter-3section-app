@@ -1,93 +1,113 @@
-# Newsletter Form Application
+# Newsletter Generation Application
 
-A modern, accessible newsletter setup form with industry-specific templates and smart defaults.
+A Next.js application that generates customized newsletters using AI, with a focus on user experience and efficient content delivery.
 
 ## Features
 
-### 1. Smart Industry Templates
-- Pre-built templates for 6 major industries
-- Customized content suggestions
-- Industry-specific target audience definitions
-- Recommended CTAs
+- **Onboarding Form**
+  - Company information collection
+  - Target audience definition
+  - Newsletter objectives setting
+  - Contact email collection
+  - Real-time validation
+  - Success feedback with delivery information
 
-### 2. Interactive Progress Tracking
-- Real-time progress indication
-- Visual section completion
-- Tooltip-enabled progress markers
-- Responsive sidebar design
+- **Database Integration**
+  - Secure data storage with Supabase
+  - Separate tables for companies and newsletters
+  - Efficient data organization
+  - Real-time updates
 
-### 3. Accessibility Features
-- ARIA labels for screen readers
-- Keyboard navigation support
-- Focus management system
-- Accessible error handling
+- **User Interface**
+  - Clean, modern design
+  - Responsive layout
+  - Intuitive form progression
+  - Success modal with next steps
+  - Error handling and feedback
+
+## Tech Stack
+
+- **Frontend**
+  - Next.js 13+ (App Router)
+  - React
+  - TypeScript
+  - Tailwind CSS
+
+- **Backend**
+  - Next.js API Routes
+  - Supabase
+  - OpenAI (coming soon)
+  - Brevo Email Service (coming soon)
+
+- **Database**
+  - PostgreSQL (via Supabase)
 
 ## Getting Started
 
-### Prerequisites
-- Node.js 16.x or higher
-- npm or yarn
-
-### Installation
-1. Clone the repository:
-```bash
-git clone [repository-url]
-```
-
+1. Clone the repository
 2. Install dependencies:
-```bash
-npm install
-# or
-yarn install
+   ```bash
+   npm install
+   ```
+
+3. Set up environment variables:
+   Create a `.env.local` file with:
+   ```
+   OPENAI_API_KEY=your_key_here
+   SUPABASE_URL=your_url_here
+   SUPABASE_SERVICE_ROLE_KEY=your_key_here
+   SUPABASE_ANON_KEY=your_key_here
+   BREVO_API_KEY=your_key_here
+   BREVO_SENDER_EMAIL=your_email_here
+   BREVO_SENDER_NAME=your_name_here
+   NEXT_PUBLIC_SUPABASE_URL=your_url_here
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your_key_here
+   ```
+
+4. Run the development server:
+   ```bash
+   npm run dev
+   ```
+
+5. Open [http://localhost:3000](http://localhost:3000) in your browser
+
+## Project Structure
+
+```
+newsletter-3section-app/
+├── app/
+│   ├── api/
+│   │   ├── onboarding/
+│   │   │   └── route.ts
+│   │   └── newsletter/
+│   ├── page.tsx
+│   └── layout.tsx
+├── utils/
+│   ├── supabase-admin.ts
+│   ├── openai.ts
+│   └── email.ts
+└── types/
+    └── index.ts
 ```
 
-3. Run the development server:
-```bash
-npm run dev
-# or
-yarn dev
-```
+## Current Status
 
-## Usage
-
-### Keyboard Navigation
-- **Tab**: Navigate through form fields
-- **Arrow Keys**: Navigate industry selection grid
-- **Space/Enter**: Select options or activate buttons
-- **Escape**: Close modals
-
-### Industry Templates
-1. Select your industry from the grid
-2. Review pre-filled content
-3. Customize as needed
-4. Complete remaining sections
-
-## Accessibility
-
-### ARIA Labels
-All interactive elements include proper ARIA labels for screen reader compatibility:
-- Form controls
-- Progress indicators
-- Error messages
-- Modal dialogs
-
-### Focus Management
-- Automatic focus on form load
-- Modal focus trapping
-- Proper focus return points
-- Keyboard-friendly navigation
+- Form creation and validation
+- Supabase integration
+- API routes for form submission
+- Success modal with delivery information
+- Newsletter generation (In Progress)
+- Email integration (Pending)
+- Review system (Pending)
 
 ## Contributing
+
 1. Fork the repository
 2. Create your feature branch
 3. Commit your changes
 4. Push to the branch
-5. Open a Pull Request
+5. Create a new Pull Request
 
 ## License
-This project is licensed under the MIT License - see the LICENSE file for details.
 
-## Acknowledgments
-- Next.js team for the framework
-- Tailwind CSS for styling
-- React community for components
+This project is licensed under the MIT License - see the LICENSE file for details.

@@ -145,9 +145,30 @@ export async function POST(req: NextRequest) {
 
     if (updateError) throw new DatabaseError(`Failed to update newsletter: ${updateError.message}`);
 
+    // Trigger email sending
+    try {
+      const emailResponse = await fetch('http://localhost:3000/api/newsletter/email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          newsletterId
+        })
+      });
+
+      if (!emailResponse.ok) {
+        console.error('Failed to send email:', await emailResponse.text());
+      } else {
+        console.log('Email sending triggered successfully');
+      }
+    } catch (error) {
+      console.error('Failed to trigger email sending:', error);
+    }
+
     return Response.json({
       success: true,
-      message: 'Newsletter content generated successfully',
+      message: 'Newsletter content generated and email triggered',
       data: {
         industry_summary: industrySummary.choices[0].message.content,
         sections

@@ -627,7 +627,7 @@ CREATE TABLE csv_uploads (
 
 -- Function to update timestamps
 CREATE OR REPLACE FUNCTION update_updated_at()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER AS $$ 
 BEGIN
     NEW.updated_at = CURRENT_TIMESTAMP;
     RETURN NEW;
