@@ -1,4 +1,4 @@
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/utils/supabase-admin';
 import { sendEmail } from '@/utils/email';
 import { DatabaseError } from '@/utils/errors';
@@ -7,8 +7,10 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
+  console.log('Email route called');
   try {
     const { newsletterId } = await req.json();
+    console.log('Newsletter ID:', newsletterId);
 
     // Get newsletter with company data
     const { data: newsletter, error: newsletterError } = await supabaseAdmin
@@ -25,9 +27,24 @@ export async function POST(req: NextRequest) {
       .eq('id', newsletterId)
       .single();
 
-    if (newsletterError) throw new DatabaseError(`Failed to fetch newsletter: ${newsletterError.message}`);
-    if (!newsletter) throw new Error('Newsletter not found');
-    if (!newsletter.companies) throw new Error('Company data not found');
+    if (newsletterError) {
+      console.error('Database error:', newsletterError);
+      throw new DatabaseError(`Failed to fetch newsletter: ${newsletterError.message}`);
+    }
+    if (!newsletter) {
+      console.error('Newsletter not found');
+      throw new Error('Newsletter not found');
+    }
+    if (!newsletter.companies) {
+      console.error('Company data not found');
+      throw new Error('Company data not found');
+    }
+
+    console.log('Newsletter data retrieved:', {
+      id: newsletter.id,
+      company: newsletter.companies.company_name,
+      email: newsletter.companies.contact_email
+    });
 
     const company = newsletter.companies;
 
@@ -37,8 +54,11 @@ export async function POST(req: NextRequest) {
     const section3 = newsletter.section3_content ? JSON.parse(newsletter.section3_content) : null;
 
     if (!section1 || !section2 || !section3) {
+      console.error('Missing sections:', { section1: !!section1, section2: !!section2, section3: !!section3 });
       throw new Error('Newsletter content not fully generated yet');
     }
+
+    console.log('Newsletter sections parsed successfully');
 
     // Create HTML email content
     const emailHtml = `
@@ -103,54 +123,39 @@ export async function POST(req: NextRequest) {
           </div>
         </div>
 
-        <div style="margin-top: 40px; padding-top: 20px; border-top: 2px solid #eee; text-align: center;">
-          <p style="color: #666;">
-            This is your newsletter draft. Please review the content and let us know if you'd like any changes.
-          </p>
+        <div style="margin-top: 40px; text-align: center; color: #666;">
+          <p>This is a draft newsletter generated for ${company.company_name}.</p>
         </div>
       </body>
       </html>
     `;
 
-    // Send email
-    const emailResponse = await sendEmail(
+    console.log('Email HTML generated, attempting to send to:', company.contact_email);
+
+    // Send the email
+    const emailResult = await sendEmail(
       company.contact_email,
       `Newsletter Draft - ${company.company_name}`,
       emailHtml
     );
 
-    if (!emailResponse.success) {
-      throw new Error(`Failed to send email: ${emailResponse.error}`);
+    console.log('Email send result:', emailResult);
+
+    if (!emailResult.success) {
+      throw new Error(emailResult.error instanceof Object ? emailResult.error.message : emailResult.error);
     }
 
-    // Update newsletter status
-    const { error: updateError } = await supabaseAdmin
-      .from('newsletters')
-      .update({
-        status: 'sent',
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', newsletterId);
-
-    if (updateError) {
-      console.error('Failed to update newsletter status:', updateError);
-    }
-
-    return Response.json({
+    return NextResponse.json({
       success: true,
-      message: 'Newsletter sent successfully',
-      data: {
-        email: company.contact_email,
-        newsletter_id: newsletterId
-      }
+      messageId: emailResult.messageId,
+      email: company.contact_email
     });
 
   } catch (error) {
-    console.error('Failed to send newsletter:', error);
-    return Response.json({
+    console.error('Email route error:', error);
+    return NextResponse.json({
       success: false,
-      message: error instanceof Error ? error.message : 'Failed to send newsletter',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: error instanceof Error ? error.message : 'Failed to send email'
     }, { status: 500 });
   }
 }
