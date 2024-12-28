@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
-import { generateNewsletter, getNewsletterById, parseNewsletterSection } from '@/utils/newsletter';
+import { generateNewsletterContent, getNewsletterById, parseNewsletterSection } from '@/utils/newsletter';
 import type { NewsletterSection } from '@/utils/newsletter';
 
 interface NewsletterPageProps {
@@ -25,8 +25,11 @@ export default function NewsletterPage({ params }: NewsletterPageProps) {
     try {
       setIsLoading(true);
       setError(null);
-      const content = await generateNewsletter(params.id);
-      setNewsletter(content);
+      const result = await generateNewsletterContent(params.id);
+      if (!result.success) {
+        throw new Error(result.error);
+      }
+      setNewsletter(result.data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to generate newsletter');
     } finally {
