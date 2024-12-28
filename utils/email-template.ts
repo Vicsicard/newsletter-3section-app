@@ -1,12 +1,5 @@
 import type { NewsletterSection } from './newsletter';
 
-interface NewsletterSection {
-  heading: string;
-  body: string;
-  replicate_image_url: string | null;
-  section_number: number;
-}
-
 export function generateEmailHTML(
   companyName: string,
   sections: NewsletterSection[]

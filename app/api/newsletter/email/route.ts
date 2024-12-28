@@ -2,13 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/utils/supabase-admin';
 import { sendEmail } from '@/utils/email';
 import { generateEmailHTML } from '@/utils/email-template';
-
-interface NewsletterSection {
-  section_number: number;
-  heading: string;
-  body: string;
-  replicate_image_url: string | null;
-}
+import type { NewsletterSection } from '@/utils/newsletter';
 
 interface NewsletterData {
   id: string;
