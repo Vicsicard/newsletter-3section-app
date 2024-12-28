@@ -11,6 +11,14 @@ export function generateEmailHTML(
   companyName: string,
   sections: NewsletterSection[]
 ) {
+  if (!companyName) {
+    throw new Error('Company name is required');
+  }
+
+  if (!Array.isArray(sections) || sections.length === 0) {
+    throw new Error('At least one section is required');
+  }
+
   return `
     <!DOCTYPE html>
     <html>
@@ -94,9 +102,14 @@ export function generateEmailHTML(
           <h1>${companyName} Newsletter</h1>
         </div>
         ${sections
-          .sort((a, b) => a.section_number - b.section_number)
+          .sort((a, b) => (a.section_number ?? 0) - (b.section_number ?? 0))
           .map(section => {
-            const content = section.body.split('\n').map(line => line.trim()).filter(Boolean);
+            if (!section.heading || !section.body) {
+              console.warn('Section missing required fields:', section);
+              return '';
+            }
+
+            const content = (section.body || '').split('\n').map(line => line.trim()).filter(Boolean);
             
             return `
               <div class="section">
@@ -104,6 +117,8 @@ export function generateEmailHTML(
                 ${section.replicate_image_url ? `<img src="${section.replicate_image_url}" alt="${section.heading}" class="section-image">` : ''}
                 <div class="section-content">
                   ${content.map(paragraph => {
+                    if (!paragraph) return '';
+                    
                     if (paragraph.startsWith('-')) {
                       // Handle bullet points
                       const bullets = content.filter(line => line.startsWith('-'));
@@ -134,12 +149,23 @@ export function generatePlainText(
   companyName: string,
   sections: NewsletterSection[]
 ): string {
+  if (!companyName) {
+    throw new Error('Company name is required');
+  }
+
+  if (!Array.isArray(sections) || sections.length === 0) {
+    throw new Error('At least one section is required');
+  }
+
   return `
 ${companyName} Newsletter
 
 ${sections
-  .sort((a, b) => a.section_number - b.section_number)
+  .sort((a, b) => (a.section_number ?? 0) - (b.section_number ?? 0))
   .map(section => {
+    if (!section.heading || !section.body) {
+      return '';
+    }
     return `
 ${section.heading}
 ${section.body}

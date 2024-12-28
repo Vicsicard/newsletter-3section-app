@@ -98,9 +98,11 @@ export async function POST(req: NextRequest) {
     if (!emailResponse.success) {
       console.error('Failed to send email:', emailResponse.error);
       throw new Error(`Failed to send email: ${
-        typeof emailResponse.error === 'string' 
-          ? emailResponse.error 
-          : emailResponse.error.message
+        emailResponse.error 
+          ? typeof emailResponse.error === 'string'
+            ? emailResponse.error
+            : emailResponse.error.message || 'Unknown error'
+          : 'Unknown error'
       }`);
     }
 

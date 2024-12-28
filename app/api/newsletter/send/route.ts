@@ -10,8 +10,28 @@ interface NewsletterSection {
   replicate_image_url: string | null;
 }
 
+interface Contact {
+  id: string;
+  email: string;
+  status: string;
+}
+
+interface NewsletterContact {
+  id: string;
+  contacts: Contact;
+}
+
+interface Company {
+  company_name: string;
+  industry: string;
+  contact_email: string;
+}
+
 interface NewsletterWithSections {
+  id: string;
   newsletter_sections: NewsletterSection[];
+  companies: Company;
+  newsletter_contacts: NewsletterContact[];
 }
 
 export const runtime = 'nodejs';
