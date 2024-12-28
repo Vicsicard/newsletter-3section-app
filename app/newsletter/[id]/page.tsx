@@ -1,9 +1,16 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { generateNewsletterContent, getNewsletterById, parseNewsletterSection } from '@/utils/newsletter';
-import type { NewsletterSection } from '@/utils/newsletter';
+import { generateNewsletterContent } from '@/utils/newsletter';
+import { supabase } from '@/utils/supabase-browser';
+
+interface NewsletterSection {
+  heading: string;
+  body: string;
+  replicate_image_url: string | null;
+  section_number: number;
+}
 
 interface NewsletterPageProps {
   params: {
@@ -16,10 +23,51 @@ export default function NewsletterPage({ params }: NewsletterPageProps) {
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [newsletter, setNewsletter] = useState<any>(null);
+  const [sections, setSections] = useState<NewsletterSection[]>([]);
   const [sendStatus, setSendStatus] = useState<{
     success?: boolean;
     message?: string;
   } | null>(null);
+
+  // Fetch newsletter data on mount
+  useEffect(() => {
+    const fetchNewsletter = async () => {
+      try {
+        const { data: newsletter, error: newsletterError } = await supabase
+          .from('newsletters')
+          .select(`
+            *,
+            companies (
+              company_name,
+              industry
+            ),
+            newsletter_sections (
+              section_number,
+              heading,
+              body,
+              replicate_image_url
+            )
+          `)
+          .eq('id', params.id)
+          .single();
+
+        if (newsletterError) throw newsletterError;
+        if (!newsletter) throw new Error('Newsletter not found');
+
+        setNewsletter(newsletter);
+        if (newsletter.newsletter_sections) {
+          setSections(
+            newsletter.newsletter_sections
+              .sort((a: NewsletterSection, b: NewsletterSection) => a.section_number - b.section_number)
+          );
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to fetch newsletter');
+      }
+    };
+
+    fetchNewsletter();
+  }, [params.id]);
 
   const handleGenerate = async () => {
     try {
@@ -29,7 +77,36 @@ export default function NewsletterPage({ params }: NewsletterPageProps) {
       if (!result.success) {
         throw new Error(result.error);
       }
-      setNewsletter(result.data);
+
+      // Fetch updated newsletter data
+      const { data: newsletter, error: newsletterError } = await supabase
+        .from('newsletters')
+        .select(`
+          *,
+          companies (
+            company_name,
+            industry
+          ),
+          newsletter_sections (
+            section_number,
+            heading,
+            body,
+            replicate_image_url
+          )
+        `)
+        .eq('id', params.id)
+        .single();
+
+      if (newsletterError) throw newsletterError;
+      if (!newsletter) throw new Error('Newsletter not found');
+
+      setNewsletter(newsletter);
+      if (newsletter.newsletter_sections) {
+        setSections(
+          newsletter.newsletter_sections
+            .sort((a: NewsletterSection, b: NewsletterSection) => a.section_number - b.section_number)
+        );
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to generate newsletter');
     } finally {
@@ -74,14 +151,14 @@ export default function NewsletterPage({ params }: NewsletterPageProps) {
     }
   };
 
-  const renderSection = (section: NewsletterSection, index: number) => (
-    <div key={index} className="mb-8 p-6 bg-white rounded-lg shadow-md">
-      <h2 className="text-2xl font-bold mb-4">{section.title}</h2>
-      {section.imageUrl && (
+  const renderSection = (section: NewsletterSection) => (
+    <div key={section.section_number} className="mb-8 p-6 bg-white rounded-lg shadow-md">
+      <h2 className="text-2xl font-bold mb-4">{section.heading}</h2>
+      {section.replicate_image_url && (
         <div style={{ position: 'relative', width: '100%', height: '400px', marginBottom: '1rem' }}>
           <Image
-            src={section.imageUrl}
-            alt={section.title}
+            src={section.replicate_image_url}
+            alt={section.heading}
             fill
             style={{ objectFit: 'cover' }}
             className="rounded-lg"
@@ -90,7 +167,7 @@ export default function NewsletterPage({ params }: NewsletterPageProps) {
         </div>
       )}
       <div className="prose max-w-none">
-        {section.content.split('\n').map((paragraph, i) => (
+        {section.body.split('\n').map((paragraph, i) => (
           <p key={i} className="mb-4">{paragraph}</p>
         ))}
       </div>
@@ -139,25 +216,11 @@ export default function NewsletterPage({ params }: NewsletterPageProps) {
         {newsletter && (
           <div>
             <div className="mb-8 p-6 bg-white rounded-lg shadow-md text-center">
-              <h1 className="text-4xl font-bold mb-2">{newsletter.company_name}</h1>
+              <h1 className="text-4xl font-bold mb-2">{newsletter.companies.company_name}</h1>
               <p className="text-gray-600">Your Industry Newsletter</p>
             </div>
 
-            {newsletter.sections.map((section: NewsletterSection, index: number) => 
-              renderSection(section, index)
-            )}
-          </div>
-        )}
-
-        {!newsletter && !isLoading && (
-          <div className="text-center py-12">
-            <p className="text-gray-600">Click Generate to create your newsletter</p>
-          </div>
-        )}
-
-        {isLoading && (
-          <div className="text-center py-12">
-            <p className="text-gray-600">Generating your newsletter...</p>
+            {sections.map((section) => renderSection(section))}
           </div>
         )}
       </div>
