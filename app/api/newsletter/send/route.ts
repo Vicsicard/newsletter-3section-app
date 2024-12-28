@@ -4,6 +4,18 @@ import { sendEmail, EmailResponse } from '@/utils/email';
 import { generateEmailHTML, generatePlainText } from '@/utils/email-template';
 import type { Newsletter, NewsletterContact, Contact } from '@/types';
 
+interface NewsletterSection {
+  section_number: number;
+  heading: string;
+  body: string;
+  image_prompt: string;
+  replicate_image_url: string | null;
+}
+
+interface NewsletterWithSections extends Newsletter {
+  newsletter_sections: NewsletterSection[];
+}
+
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
@@ -38,7 +50,7 @@ export async function POST(req: NextRequest) {
         )
       `)
       .eq('id', newsletterId)
-      .single();
+      .single<NewsletterWithSections>();
 
     if (newsletterError) {
       console.error('Newsletter fetch error:', newsletterError);
@@ -57,12 +69,12 @@ export async function POST(req: NextRequest) {
 
     // Transform sections into the expected format
     const sections = newsletter.newsletter_sections
-      .sort((a, b) => a.section_number - b.section_number)
+      .sort((a: NewsletterSection, b: NewsletterSection) => a.section_number - b.section_number)
       .map(section => ({
         title: section.heading,
         content: section.body,
         imagePrompt: section.image_prompt,
-        imageUrl: section.replicate_image_url
+        imageUrl: section.replicate_image_url || ''
       }));
 
     console.log('Processed sections:', sections.length, JSON.stringify(sections, null, 2));
