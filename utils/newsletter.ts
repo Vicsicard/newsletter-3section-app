@@ -133,7 +133,8 @@ export async function generateNewsletterContent(newsletterId: string) {
 
     // Trigger email sending
     try {
-      const emailResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/newsletter/email`, {
+      const baseUrl = process.env.BASE_URL || process.env.VERCEL_URL || 'http://localhost:3000';
+      const emailResponse = await fetch(`${baseUrl}/api/newsletter/email`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -142,7 +143,10 @@ export async function generateNewsletterContent(newsletterId: string) {
       });
 
       if (!emailResponse.ok) {
-        console.error('Failed to trigger email:', await emailResponse.text());
+        const errorText = await emailResponse.text();
+        console.error('Failed to trigger email:', errorText);
+      } else {
+        console.log('Email trigger response:', await emailResponse.json());
       }
     } catch (error) {
       console.error('Failed to trigger email sending:', error);

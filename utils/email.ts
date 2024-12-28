@@ -88,11 +88,20 @@ export async function sendEmail(to: string, subject: string, htmlContent: string
       to,
       subject,
       sender: sendSmtpEmail.sender,
-      contentLength: htmlContent.length
+      contentLength: htmlContent.length,
+      senderEmail: BREVO_SENDER_EMAIL,
+      senderName: BREVO_SENDER_NAME,
+      environment: process.env.NODE_ENV
     });
 
     // Send email and get response
     const { response, body } = await apiInstance.sendTransacEmail(sendSmtpEmail);
+    
+    console.log('Brevo API Response:', {
+      statusCode: response.statusCode,
+      body: body,
+      headers: response.headers
+    });
     
     // Check if response is successful (2xx status code)
     if (response.statusCode && response.statusCode >= 200 && response.statusCode < 300) {
