@@ -115,25 +115,34 @@ Image Prompt: [Description of the visual theme for this section]`;
     // Parse the response into three sections
     const sections = response.split('Bundle').filter(section => section.trim());
     
-    return sections.map(section => {
+    return sections.map((section, index) => {
       const lines = section.split('\n').filter(line => line.trim());
-      const title = lines.find(line => line.includes('Headline:'))?.split('Headline:')[1]?.trim() || '';
+      const heading = lines.find(line => line.includes('Headline:'))?.split('Headline:')[1]?.trim() || '';
       const imagePrompt = lines.find(line => line.includes('Image Prompt:'))?.split('Image Prompt:')[1]?.trim() || '';
       
-      // Remove the section number, headline, and image prompt lines to get the content
-      const content = lines
-        .filter(line => !line.includes('Bundle') && !line.includes('Headline:') && !line.includes('Image Prompt:'))
-        .join('\n')
-        .trim();
+      // Get content by removing headline and image prompt lines
+      const contentLines = lines.filter(line => 
+        !line.includes('Headline:') && 
+        !line.includes('Image Prompt:')
+      );
+      const body = contentLines.join('\n').trim();
 
       return {
-        title,
-        content,
-        imagePrompt,
+        heading,
+        body,
+        image_prompt: imagePrompt,
+        replicate_image_url: null,
+        section_number: index + 1
       };
     });
   } catch (error) {
-    console.error('Error generating newsletter sections:', error);
-    throw error;
+    console.error('Error parsing OpenAI response:', error);
+    return [{
+      heading: 'Error',
+      body: 'Failed to generate content. Please try again.',
+      image_prompt: '',
+      replicate_image_url: null,
+      section_number: 1
+    }];
   }
 }
