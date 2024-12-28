@@ -39,9 +39,6 @@ export async function POST(request: Request) {
       .from('newsletters')
       .insert([{
         company_id: company.id,
-        title: `${data.company_name}'s Newsletter`,
-        newsletter_objectives: data.newsletter_objectives || null,
-        primary_cta: data.primary_cta || null,
         status: 'draft',
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()

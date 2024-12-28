@@ -182,7 +182,13 @@ export async function getNewsletterById(id: string) {
 
 export function parseNewsletterSection(sectionJson: string): NewsletterSection {
   try {
-    return JSON.parse(sectionJson);
+    const parsed = JSON.parse(sectionJson);
+    // Ensure the section has both imagePrompt and imageUrl
+    return {
+      ...parsed,
+      imageUrl: parsed.imageUrl || parsed.replicate_image_url || '', // Try both possible image URL fields
+      imagePrompt: parsed.imagePrompt || ''
+    };
   } catch (error) {
     console.error('Failed to parse newsletter section:', error);
     return {

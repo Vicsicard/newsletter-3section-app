@@ -2,7 +2,6 @@ import { NextRequest } from 'next/server';
 import { supabaseAdmin } from '@/utils/supabase-admin';
 import { sendEmail, EmailResponse } from '@/utils/email';
 import { generateEmailHTML, generatePlainText } from '@/utils/email-template';
-import { parseNewsletterSection } from '@/utils/newsletter';
 import type { Newsletter, NewsletterContact, Contact } from '@/types';
 
 export const runtime = 'nodejs';
@@ -29,10 +28,17 @@ export async function POST(req: NextRequest) {
             email,
             status
           )
+        ),
+        newsletter_sections (
+          section_number,
+          heading,
+          body,
+          image_prompt,
+          replicate_image_url
         )
       `)
       .eq('id', newsletterId)
-      .single<Newsletter>();
+      .single();
 
     if (newsletterError) {
       console.error('Newsletter fetch error:', newsletterError);
@@ -49,15 +55,21 @@ export async function POST(req: NextRequest) {
       throw new Error('No contacts found for this newsletter');
     }
 
-    // Parse newsletter sections
-    const section1 = parseNewsletterSection(newsletter.section1_content);
-    const section2 = parseNewsletterSection(newsletter.section2_content);
-    const section3 = parseNewsletterSection(newsletter.section3_content);
+    // Transform sections into the expected format
+    const sections = newsletter.newsletter_sections
+      .sort((a, b) => a.section_number - b.section_number)
+      .map(section => ({
+        title: section.heading,
+        content: section.body,
+        imagePrompt: section.image_prompt,
+        imageUrl: section.replicate_image_url
+      }));
 
-    const sections = [section1, section2, section3].filter(Boolean);
-    console.log('Parsed sections:', sections.length);
+    console.log('Processed sections:', sections.length, JSON.stringify(sections, null, 2));
 
     // Generate HTML and plain text versions
+    console.log('Generating email content for company:', newsletter.companies.company_name);
+
     const htmlContent = generateEmailHTML(
       newsletter.companies.company_name,
       sections
