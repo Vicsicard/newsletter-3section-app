@@ -108,8 +108,8 @@ export async function generateNewsletterContent(newsletterId: string) {
 
       sections.push({
         title: prompt,
-        content: completion.choices[0].message.content,
-        imagePrompt: imagePrompt.choices[0].message.content,
+        content: completion.choices[0].message.content || 'No content generated',
+        imagePrompt: imagePrompt.choices[0].message.content || 'No image prompt generated',
       });
     }
 
@@ -117,7 +117,7 @@ export async function generateNewsletterContent(newsletterId: string) {
     const { error: updateError } = await supabaseAdmin
       .from('newsletters')
       .update({
-        industry_summary: industrySummary.choices[0].message.content,
+        industry_summary: industrySummary.choices[0].message.content || 'No industry summary generated',
         section1_content: JSON.stringify(sections[0]),
         section2_content: JSON.stringify(sections[1]),
         section3_content: JSON.stringify(sections[2]),
@@ -151,7 +151,7 @@ export async function generateNewsletterContent(newsletterId: string) {
     return { 
       success: true, 
       data: { 
-        industry_summary: industrySummary.choices[0].message.content, 
+        industry_summary: industrySummary.choices[0].message.content || 'No industry summary generated', 
         sections 
       } 
     };
