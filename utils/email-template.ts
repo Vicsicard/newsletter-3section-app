@@ -1,5 +1,12 @@
 import type { NewsletterSection } from './newsletter';
 
+interface NewsletterSection {
+  heading: string;
+  body: string;
+  replicate_image_url: string | null;
+  section_number: number;
+}
+
 export function generateEmailHTML(
   companyName: string,
   sections: NewsletterSection[]
@@ -86,36 +93,37 @@ export function generateEmailHTML(
         <div class="header">
           <h1>${companyName} Newsletter</h1>
         </div>
-        ${sections.map((section, index) => {
-          const content = section.content.split('\n').map(line => line.trim()).filter(Boolean);
-          const sectionTypes = ['Pain Point Analysis', 'Common Mistakes', 'Company Solutions'];
-          
-          return `
-            <div class="section">
-              <h2 class="section-title">${section.title}</h2>
-              ${section.imageUrl ? `<img src="${section.imageUrl}" alt="${section.title}" class="section-image">` : ''}
-              <div class="section-content">
-                ${content.map(paragraph => {
-                  if (paragraph.startsWith('-')) {
-                    // Handle bullet points
-                    const bullets = content.filter(line => line.startsWith('-'));
-                    return `
-                      <ul class="bullet-points">
-                        ${bullets.map(bullet => `<li>${bullet.substring(1).trim()}</li>`).join('')}
-                      </ul>
-                    `;
-                  } else if (paragraph.toLowerCase().includes('takeaway')) {
-                    // Handle takeaway section
-                    return `<div class="takeaway">${paragraph}</div>`;
-                  } else {
-                    // Regular paragraph
-                    return `<p>${paragraph}</p>`;
-                  }
-                }).join('')}
+        ${sections
+          .sort((a, b) => a.section_number - b.section_number)
+          .map(section => {
+            const content = section.body.split('\n').map(line => line.trim()).filter(Boolean);
+            
+            return `
+              <div class="section">
+                <h2 class="section-title">${section.heading}</h2>
+                ${section.replicate_image_url ? `<img src="${section.replicate_image_url}" alt="${section.heading}" class="section-image">` : ''}
+                <div class="section-content">
+                  ${content.map(paragraph => {
+                    if (paragraph.startsWith('-')) {
+                      // Handle bullet points
+                      const bullets = content.filter(line => line.startsWith('-'));
+                      return `
+                        <ul class="bullet-points">
+                          ${bullets.map(bullet => `<li>${bullet.substring(1).trim()}</li>`).join('')}
+                        </ul>
+                      `;
+                    } else if (paragraph.toLowerCase().includes('takeaway')) {
+                      // Handle takeaway section
+                      return `<div class="takeaway">${paragraph}</div>`;
+                    } else {
+                      // Regular paragraph
+                      return `<p>${paragraph}</p>`;
+                    }
+                  }).join('')}
+                </div>
               </div>
-            </div>
-          `;
-        }).join('')}
+            `;
+          }).join('')}
       </div>
     </body>
     </html>
@@ -129,12 +137,14 @@ export function generatePlainText(
   return `
 ${companyName} Newsletter
 
-${sections.map((section, index) => {
-  return `
-${section.title}
-${section.content}
+${sections
+  .sort((a, b) => a.section_number - b.section_number)
+  .map(section => {
+    return `
+${section.heading}
+${section.body}
 
 `;
-}).join('\n')}
+  }).join('\n')}
 `;
 }

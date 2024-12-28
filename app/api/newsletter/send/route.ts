@@ -1,18 +1,16 @@
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/utils/supabase-admin';
-import { sendEmail, EmailResponse } from '@/utils/email';
-import { generateEmailHTML, generatePlainText } from '@/utils/email-template';
-import type { Newsletter, NewsletterContact, Contact } from '@/types';
+import { sendEmail } from '@/utils/email';
+import { generateEmailHTML } from '@/utils/email-template';
 
 interface NewsletterSection {
   section_number: number;
   heading: string;
   body: string;
-  image_prompt: string;
   replicate_image_url: string | null;
 }
 
-interface NewsletterWithSections extends Newsletter {
+interface NewsletterWithSections {
   newsletter_sections: NewsletterSection[];
 }
 
@@ -45,7 +43,6 @@ export async function POST(req: NextRequest) {
           section_number,
           heading,
           body,
-          image_prompt,
           replicate_image_url
         )
       `)
@@ -69,118 +66,58 @@ export async function POST(req: NextRequest) {
 
     // Transform sections into the expected format
     const sections = newsletter.newsletter_sections
-      .sort((a: NewsletterSection, b: NewsletterSection) => a.section_number - b.section_number)
-      .map(section => ({
-        title: section.heading,
-        content: section.body,
-        imagePrompt: section.image_prompt,
-        imageUrl: section.replicate_image_url || ''
-      }));
+      .sort((a: NewsletterSection, b: NewsletterSection) => a.section_number - b.section_number);
 
     console.log('Processed sections:', sections.length, JSON.stringify(sections, null, 2));
 
-    // Generate HTML and plain text versions
-    console.log('Generating email content for company:', newsletter.companies.company_name);
+    // Generate HTML content
+    const emailHtml = generateEmailHTML(newsletter.companies.company_name, sections);
 
-    const htmlContent = generateEmailHTML(
-      newsletter.companies.company_name,
-      sections
+    // Send to each contact
+    const results = await Promise.all(
+      newsletter.newsletter_contacts.map(async (nc) => {
+        const contact = nc.contacts;
+        if (!contact || !contact.email || contact.status !== 'active') {
+          console.log('Skipping inactive or invalid contact:', contact);
+          return { success: false, error: 'Invalid or inactive contact', email: contact?.email };
+        }
+
+        try {
+          console.log('Sending email to:', contact.email);
+          return await sendEmail(
+            contact.email,
+            `${newsletter.companies.company_name} Newsletter`,
+            emailHtml
+          );
+        } catch (error) {
+          console.error('Error sending to:', contact.email, error);
+          return { success: false, error: error instanceof Error ? error.message : 'Send failed', email: contact.email };
+        }
+      })
     );
 
-    const textContent = generatePlainText(
-      newsletter.companies.company_name,
-      sections
-    );
+    // Count successes and failures
+    const successCount = results.filter(r => r.success).length;
+    const failedCount = results.filter(r => !r.success).length;
 
-    console.log('Content generated. HTML length:', htmlContent.length);
-
-    // Filter out contacts and ensure they are active
-    const contacts = newsletter.newsletter_contacts
-      .map((nc: NewsletterContact) => nc.contacts)
-      .filter((contact): contact is Contact => {
-        if (!contact) return false;
-        if (!contact.email) return false;
-        if (contact.status === 'unsubscribed') return false;
-        return true;
-      });
-
-    console.log('Found contacts:', contacts.length);
-    
-    if (contacts.length === 0) {
-      throw new Error('No active contacts found for this newsletter');
-    }
-
-    const emailPromises = contacts.map(async (contact) => {
-      try {
-        console.log('Attempting to send to:', contact.email);
-        const result = await sendEmail(
-          contact.email,
-          `${newsletter.companies.company_name} - Industry Newsletter`,
-          htmlContent
-        );
-        console.log('Send result for', contact.email, ':', result);
-        return result;
-      } catch (error) {
-        console.error('Failed to send to', contact.email, ':', error);
-        return { 
-          success: false, 
-          error: error instanceof Error ? error.message : 'Unknown error',
-          email: contact.email 
-        };
-      }
+    console.log('Email sending complete:', {
+      total: results.length,
+      success: successCount,
+      failed: failedCount
     });
 
-    // Wait for all emails to be sent
-    const results = await Promise.all(emailPromises);
-    console.log('All send results:', JSON.stringify(results, null, 2));
-
-    // Check if any emails failed to send
-    const failedEmails = results.filter((result) => {
-      if (!result.success) {
-        console.log('Failed email:', {
-          email: result.email,
-          error: result.error
-        });
-        return true;
-      }
-      return false;
-    });
-    
-    console.log('Failed emails:', failedEmails.length, JSON.stringify(failedEmails, null, 2));
-
-    // Update newsletter status
-    const updateData = {
-      sent_at: new Date().toISOString(),
-      sent_count: results.length - failedEmails.length,
-      failed_count: failedEmails.length,
-      last_sent_status: failedEmails.length === 0 ? 'success' : 'partial_failure',
-      status: 'sent'
-    };
-
-    console.log('Updating newsletter with:', updateData);
-
-    const { error: updateError } = await supabaseAdmin
-      .from('newsletters')
-      .update(updateData)
-      .eq('id', newsletterId);
-
-    if (updateError) {
-      console.error('Failed to update newsletter status:', updateError);
-    }
-
-    return Response.json({
+    return NextResponse.json({
       success: true,
-      totalSent: results.length - failedEmails.length,
-      failedCount: failedEmails.length,
-      status: failedEmails.length === 0 ? 'success' : 'partial_failure'
+      totalSent: successCount,
+      failedCount,
+      results
     });
 
   } catch (error) {
-    console.error('Newsletter sending error:', error);
-    return Response.json({
+    console.error('Error in send route:', error);
+    return NextResponse.json({
       success: false,
-      message: error instanceof Error ? error.message : 'Failed to send newsletter',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: error instanceof Error ? error.message : 'Failed to send newsletter'
     }, { status: 500 });
   }
 }
