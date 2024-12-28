@@ -118,9 +118,6 @@ export async function generateNewsletterContent(newsletterId: string) {
       .from('newsletters')
       .update({
         industry_summary: industrySummary.choices[0].message.content || 'No industry summary generated',
-        section1_content: JSON.stringify(sections[0]),
-        section2_content: JSON.stringify(sections[1]),
-        section3_content: JSON.stringify(sections[2]),
         status: 'generated',
         updated_at: new Date().toISOString()
       })
@@ -129,6 +126,28 @@ export async function generateNewsletterContent(newsletterId: string) {
     if (updateError) {
       console.error('Failed to update newsletter:', updateError);
       return { success: false, error: `Failed to update newsletter: ${updateError.message}` };
+    }
+
+    // Insert sections into newsletter_sections table
+    for (let i = 0; i < sections.length; i++) {
+      const section = sections[i];
+      const { error: sectionError } = await supabaseAdmin
+        .from('newsletter_sections')
+        .insert({
+          newsletter_id: newsletterId,
+          section_number: i + 1,
+          heading: section.title,
+          body: section.content,
+          image_prompt: section.imagePrompt,
+          image_status: 'pending',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        });
+
+      if (sectionError) {
+        console.error(`Failed to insert section ${i + 1}:`, sectionError);
+        return { success: false, error: `Failed to insert section ${i + 1}: ${sectionError.message}` };
+      }
     }
 
     // Trigger email sending
@@ -152,12 +171,12 @@ export async function generateNewsletterContent(newsletterId: string) {
       console.error('Failed to trigger email sending:', error);
     }
 
-    return { 
-      success: true, 
-      data: { 
-        industry_summary: industrySummary.choices[0].message.content || 'No industry summary generated', 
-        sections 
-      } 
+    return {
+      success: true,
+      data: {
+        newsletterId,
+        sections: sections.length
+      }
     };
 
   } catch (error) {
